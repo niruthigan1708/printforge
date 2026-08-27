@@ -30,6 +30,8 @@ The backend requires Java 21, Maven 3.9+, and PostgreSQL. Copy `.env.example` to
 
 ## API
 
+- `POST /api/auth/register` with `{ "name", "email", "password" }` (always creates `CUSTOMER`)
+- `POST /api/auth/login` with `{ "email", "password" }`
 - `GET /api/products`
 - `GET /api/products?search=stand`
 - `GET /api/products?category=Gaming`
@@ -37,6 +39,8 @@ The backend requires Java 21, Maven 3.9+, and PostgreSQL. Copy `.env.example` to
 - `GET /api/categories`
 
 Product responses are DTOs, keeping JPA entities out of the HTTP contract.
+
+Authentication uses BCrypt password hashing and JWT response tokens. Set `JWT_SECRET` to a long random value before running the backend; never commit real credentials.
 
 ## Architecture
 
