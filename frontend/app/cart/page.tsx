@@ -5,6 +5,7 @@ import { Header } from '../../components/Header'
 import { money } from '../../lib/types'
 import { useCart } from '../../lib/cart-context'
 import { placeholderImage } from '../../lib/placeholder'
+import { productImageUrl } from '../../lib/api'
 
 export default function CartPage() {
   const { items, updateQuantity, removeItem, subtotal, deliveryFee, total } = useCart()
@@ -28,7 +29,7 @@ export default function CartPage() {
             <div className="cart-row" key={item.productId}>
               <div className="cart-thumb">
                 <img
-                  src={item.imageUrl || placeholderImage(item.name, item.productId)}
+                  src={productImageUrl(item.productId)}
                   alt=""
                   onError={e => { e.currentTarget.onerror = null; e.currentTarget.src = placeholderImage(item.name, item.productId) }}
                 />

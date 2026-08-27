@@ -15,4 +15,5 @@ app:
   seed:
     enabled: false
   upload-dir: target/test-uploads/custom-prints
+  product-image-dir: target/test-uploads/products
 JWT_SECRET: test-secret-key-at-least-32-characters-long

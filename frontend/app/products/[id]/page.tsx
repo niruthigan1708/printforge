@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Header } from '../../../components/Header'
 import { useCart } from '../../../lib/cart-context'
-import { api, ApiError } from '../../../lib/api'
+import { api, ApiError, productImageUrl } from '../../../lib/api'
 import { money, type Product } from '../../../lib/types'
 import { placeholderImage } from '../../../lib/placeholder'
 
@@ -48,7 +48,7 @@ export default function ProductDetailPage() {
       <section className="shell section" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 50, paddingTop: 50 }}>
         <div className="product-image" style={{ height: 460 }}>
           <img
-            src={product.imageUrl || placeholderImage(product.name, product.id)}
+            src={productImageUrl(product.id)}
             alt={product.name}
             style={{ width: '100%', height: '100%', objectFit: 'cover', mixBlendMode: 'multiply' }}
             onError={e => { e.currentTarget.onerror = null; e.currentTarget.src = placeholderImage(product.name, product.id) }}
@@ -83,7 +83,7 @@ export default function ProductDetailPage() {
               <a className="product-card" key={item.id} href={`/products/${item.id}`}>
                 <div className="product-image">
                   <img
-                    src={item.imageUrl || placeholderImage(item.name, item.id)}
+                    src={productImageUrl(item.id)}
                     alt={item.name}
                     onError={e => { e.currentTarget.onerror = null; e.currentTarget.src = placeholderImage(item.name, item.id) }}
                   />

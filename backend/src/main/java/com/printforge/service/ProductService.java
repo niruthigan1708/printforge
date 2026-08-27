@@ -19,6 +19,7 @@ import java.util.List;
 public class ProductService {
   private final ProductRepository products;
   private final CategoryRepository categories;
+  private final ProductImageService productImages;
 
   public List<ProductResponse> find(String search, String category) {
     List<Product> result;
@@ -51,6 +52,7 @@ public class ProductService {
   public void delete(Long id) {
     Product product = products.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
     products.delete(product);
+    productImages.delete(id);
   }
 
   private void apply(Product product, ProductRequest request, Category category) {

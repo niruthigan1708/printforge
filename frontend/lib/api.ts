@@ -49,4 +49,6 @@ export const api = {
   postForm: <T,>(path: string, form: FormData) => request<T>(path, { method: 'POST', body: form }),
 }
 
+export const productImageUrl = (productId: number) => `${API_URL}/products/${productId}/image`
+
 export { API_URL, TOKEN_KEY }

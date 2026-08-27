@@ -19,3 +19,4 @@ spring.servlet.multipart:
   max-request-size: 22MB
 app:
   upload-dir: ${UPLOAD_DIR:uploads/custom-prints}
+  product-image-dir: ${PRODUCT_IMAGE_DIR:uploads/products}

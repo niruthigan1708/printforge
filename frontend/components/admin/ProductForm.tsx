@@ -1,7 +1,7 @@
 'use client'
 import { FormEvent, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { api, ApiError } from '../../lib/api'
+import { api, ApiError, productImageUrl } from '../../lib/api'
 import type { Category, Product } from '../../lib/types'
 
 type ProductFormValues = {
@@ -24,6 +24,11 @@ export function ProductForm({ product }: { product?: Product }) {
   const [values, setValues] = useState<ProductFormValues>(EMPTY)
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [photoFile, setPhotoFile] = useState<File | null>(null)
+  const [photoVersion, setPhotoVersion] = useState(0)
+  const [photoError, setPhotoError] = useState('')
+  const [photoNotice, setPhotoNotice] = useState('')
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
 
   useEffect(() => {
     api.get<Category[]>('/categories').then(setCategories).catch(() => {})
@@ -74,8 +79,49 @@ export function ProductForm({ product }: { product?: Product }) {
     }
   }
 
+  async function uploadPhoto() {
+    if (!product || !photoFile) return
+    setUploadingPhoto(true)
+    setPhotoError('')
+    setPhotoNotice('')
+    try {
+      const form = new FormData()
+      form.set('file', photoFile)
+      await api.postForm(`/products/${product.id}/image`, form)
+      setPhotoVersion(v => v + 1)
+      setPhotoFile(null)
+      setPhotoNotice('Photo updated')
+      setTimeout(() => setPhotoNotice(''), 2500)
+    } catch (err) {
+      setPhotoError(err instanceof ApiError ? err.message : 'Could not upload this photo.')
+    } finally {
+      setUploadingPhoto(false)
+    }
+  }
+
   return (
-    <form className="form-card" onSubmit={submit}>
+    <>
+      {product && (
+        <div className="form-card" style={{ marginBottom: 20 }}>
+          <label>Product photo</label>
+          <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginTop: 8 }}>
+            <img
+              src={`${productImageUrl(product.id)}${photoVersion ? `?v=${photoVersion}` : ''}`}
+              alt={product.name}
+              style={{ width: 90, height: 90, objectFit: 'cover', border: '1px solid var(--line)', flex: 'none' }}
+            />
+            <div style={{ flex: 1 }}>
+              <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={e => setPhotoFile(e.target.files?.[0] ?? null)} />
+              <button type="button" className="btn btn-sm" style={{ marginTop: 10 }} disabled={!photoFile || uploadingPhoto} onClick={uploadPhoto}>
+                {uploadingPhoto ? 'Uploading…' : 'Upload photo'}
+              </button>
+            </div>
+          </div>
+          {photoError && <div className="alert alert-error" style={{ marginTop: 12 }}>{photoError}</div>}
+          {photoNotice && <div className="alert alert-success" style={{ marginTop: 12 }}>{photoNotice}</div>}
+        </div>
+      )}
+      <form className="form-card" onSubmit={submit}>
       {error && <div className="alert alert-error">{error}</div>}
       <label>Name<input required value={values.name} onChange={e => setValues({ ...values, name: e.target.value })} /></label>
       <label>Description<textarea required rows={4} value={values.description} onChange={e => setValues({ ...values, description: e.target.value })} /></label>
@@ -93,9 +139,10 @@ export function ProductForm({ product }: { product?: Product }) {
           {categories.map(category => <option key={category.id} value={category.id}>{category.name}</option>)}
         </select>
       </label>
-      <label>Image URL<input value={values.imageUrl} onChange={e => setValues({ ...values, imageUrl: e.target.value })} placeholder="https://…" /></label>
+      <label>Fallback image URL<input value={values.imageUrl} onChange={e => setValues({ ...values, imageUrl: e.target.value })} placeholder="https://… (used only if no photo is uploaded)" /></label>
       <label className="checkbox-row"><input type="checkbox" checked={values.active} onChange={e => setValues({ ...values, active: e.target.checked })} /> Active (visible to customers)</label>
       <button className="btn orange" type="submit" disabled={submitting}>{submitting ? 'Saving…' : product ? 'Save changes' : 'Create product'}</button>
-    </form>
+      </form>
+    </>
   )
 }
