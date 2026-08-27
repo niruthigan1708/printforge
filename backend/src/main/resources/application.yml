@@ -2,7 +2,7 @@ spring:
   application:
     name: printforge-api
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:campusconnect}
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:printforge}
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:}
   jpa:
@@ -17,3 +17,5 @@ server:
 spring.servlet.multipart:
   max-file-size: 20MB
   max-request-size: 22MB
+app:
+  upload-dir: ${UPLOAD_DIR:uploads/custom-prints}
