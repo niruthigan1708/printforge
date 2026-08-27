@@ -1,9 +1,13 @@
 # PrintForge API
 
-Spring Boot 3 / Java 21 API foundation for the PrintForge storefront.
+Spring Boot 3 / Java 21 REST API for PrintForge — authentication, product/category catalogue, orders, and the custom 3D-print workflow.
 
-Current slice: PostgreSQL-backed categories and products, DTO responses, simple search/category filtering, CORS, environment-driven configuration, and BCrypt/JWT authentication. Orders, custom-print workflow, admin mutations, and file storage are the next implementation slices.
+See the [root README](../README.md) for the full API reference, database design, and setup instructions. Quick start:
 
-Run from this directory with `mvn spring-boot:run`. The API listens on `http://localhost:8080`.
+```bash
+cp ../.env.example .env   # fill in your local DB password and a JWT secret
+mvn spring-boot:run       # http://localhost:8080
+mvn test                  # runs against an in-memory H2 database
+```
 
-Auth endpoints are `POST /api/auth/register` and `POST /api/auth/login`. Public registration always assigns the `CUSTOMER` role.
+Layered architecture: `controller` → `service` → `repository` → `entity`, with `dto` records at every HTTP boundary, `security` for JWT auth, `exception` for centralized error handling, and `config` for security rules, CORS, and demo data seeding.
