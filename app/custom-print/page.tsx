@@ -1,0 +1,11 @@
+'use client'
+import { FormEvent, useState } from 'react'
+import { ArrowUpRight, Check, Upload } from 'lucide-react'
+import { Header } from '../../components/Header'
+
+export default function CustomPrintPage() {
+  const [file, setFile] = useState<File | null>(null)
+  const [sent, setSent] = useState(false)
+  function submit(event: FormEvent) { event.preventDefault(); if (file) setSent(true) }
+  return <main><Header/><section className="shell page-intro"><div className="eyebrow">Custom printing / STL + 3MF</div><h1 className="page-title">Bring your<br/><span style={{color:'var(--orange)'}}>design</span> to life.</h1><p className="hero-copy">Send us your model and we will review the details, recommend a material, and come back with a considered quote.</p></section><section className="shell form-layout">{sent ? <div className="success"><Check size={26}/><h2>Request received.</h2><p>We have your file. Your request number is <b>CR-1001</b>. We will review it and be in touch with a quote.</p></div> : <form onSubmit={submit}><label className="upload"><Upload size={24}/><b>{file ? file.name : 'Drop your 3D model here'}</b><span>{file ? `${(file.size / 1024 / 1024).toFixed(2)} MB` : 'or choose a file · STL, 3MF · max 20MB'}</span><input type="file" accept=".stl,.3mf" onChange={event => setFile(event.target.files?.[0] ?? null)} required/></label><div className="form-two"><label>Material<select defaultValue="PLA"><option>PLA</option><option>PETG</option><option>ABS</option></select></label><label>Color<select defaultValue="Black"><option>Black</option><option>White</option><option>Red</option><option>Blue</option><option>Custom</option></select></label></div><label>Quantity<input type="number" min="1" defaultValue="1" required/></label><label>Additional instructions<textarea rows={5} placeholder="Tell us about finish, dimensions, or anything else we should know."/></label><button className="btn orange" type="submit">Submit custom request <ArrowUpRight size={15}/></button></form>}<aside className="form-aside"><div className="eyebrow">What happens next</div><h2>A human reviews every request.</h2><ol><li>Upload your model and preferences.</li><li>We review printability and materials.</li><li>You receive a clear quote to accept.</li></ol></aside></section></main>
+}
