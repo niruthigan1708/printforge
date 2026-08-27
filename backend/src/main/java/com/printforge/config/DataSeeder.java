@@ -11,7 +11,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -93,7 +96,8 @@ public class DataSeeder implements CommandLineRunner {
       {"Gaming Headset Hook", "Gaming", "An under-desk clamp hook that keeps your headset off the desk.", "1100", 42, "PETG", "Black"},
       {"Bookend Pair (Geometric)", "Home & Decor", "A faceted bookend pair heavy enough to hold a full shelf upright.", "2450", 22, "PETG", "Grey"},
     };
-    for (Object[] def : defs) {
+    for (int i = 0; i < defs.length; i++) {
+      Object[] def = defs[i];
       Product product = new Product();
       product.setName((String) def[0]);
       product.setCategory(categoryByName.get((String) def[1]));
@@ -102,8 +106,51 @@ public class DataSeeder implements CommandLineRunner {
       product.setStockQuantity((Integer) def[4]);
       product.setMaterial((String) def[5]);
       product.setColor((String) def[6]);
-      product.setImageUrl("https://placehold.co/600x600/1f2937/e5e7eb?text=" + ((String) def[0]).replace(" ", "+"));
+      product.setImageUrl(placeholderImage((String) def[0], i));
       products.save(product);
     }
+  }
+
+  /**
+   * Self-contained SVG placeholder as a data URI, so the storefront never depends on an
+   * external image host being reachable (placehold.co is blocked on some networks).
+   */
+  private static final List<String[]> TONES = List.of(
+    new String[] { "#ff5c35", "#ffffff" },
+    new String[] { "#d7f36b", "#171717" },
+    new String[] { "#cfe9ff", "#171717" },
+    new String[] { "#e9e0d5", "#171717" },
+    new String[] { "#171717", "#ffffff" }
+  );
+
+  static String placeholderImage(String label, long seed) {
+    String[] tone = TONES.get((int) (seed % TONES.size()));
+    String escaped = label.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+    List<String> lines = wrap(escaped, 16);
+    StringBuilder text = new StringBuilder();
+    int startY = 300 - (lines.size() - 1) * 20;
+    for (int i = 0; i < lines.size(); i++) {
+      text.append("<tspan x=\"300\" y=\"").append(startY + i * 40).append("\">").append(lines.get(i)).append("</tspan>");
+    }
+    String svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"600\" height=\"600\" viewBox=\"0 0 600 600\">"
+      + "<rect width=\"600\" height=\"600\" fill=\"" + tone[0] + "\"/>"
+      + "<text font-family=\"Arial, sans-serif\" font-size=\"32\" font-weight=\"700\" fill=\"" + tone[1] + "\" text-anchor=\"middle\" dominant-baseline=\"middle\">" + text + "</text>"
+      + "</svg>";
+    return "data:image/svg+xml;base64," + Base64.getEncoder().encodeToString(svg.getBytes(StandardCharsets.UTF_8));
+  }
+
+  private static List<String> wrap(String text, int maxCharsPerLine) {
+    List<String> lines = new java.util.ArrayList<>();
+    StringBuilder current = new StringBuilder();
+    for (String word : text.split(" ")) {
+      if (current.length() > 0 && current.length() + 1 + word.length() > maxCharsPerLine) {
+        lines.add(current.toString());
+        current = new StringBuilder();
+      }
+      if (current.length() > 0) current.append(' ');
+      current.append(word);
+    }
+    if (current.length() > 0) lines.add(current.toString());
+    return lines;
   }
 }

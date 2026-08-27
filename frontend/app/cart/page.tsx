@@ -4,6 +4,7 @@ import { ArrowLeft, Minus, Plus, X } from 'lucide-react'
 import { Header } from '../../components/Header'
 import { money } from '../../lib/types'
 import { useCart } from '../../lib/cart-context'
+import { placeholderImage } from '../../lib/placeholder'
 
 export default function CartPage() {
   const { items, updateQuantity, removeItem, subtotal, deliveryFee, total } = useCart()
@@ -25,7 +26,13 @@ export default function CartPage() {
             </div>
           ) : items.map(item => (
             <div className="cart-row" key={item.productId}>
-              <div className="cart-thumb"><img src={item.imageUrl || 'https://placehold.co/200x200/e8e5df/171717?text=PF'} alt="" /></div>
+              <div className="cart-thumb">
+                <img
+                  src={item.imageUrl || placeholderImage(item.name, item.productId)}
+                  alt=""
+                  onError={e => { e.currentTarget.onerror = null; e.currentTarget.src = placeholderImage(item.name, item.productId) }}
+                />
+              </div>
               <div className="cart-info">
                 <Link href={`/products/${item.productId}`}><b>{item.name}</b></Link>
                 <span>{item.category} · {item.material}</span>

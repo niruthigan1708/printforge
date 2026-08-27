@@ -19,7 +19,7 @@ public class Product {
   @Min(0) private int stockQuantity;
   @NotBlank private String material;
   @NotBlank private String color;
-  private String imageUrl;
+  @Column(columnDefinition = "text") private String imageUrl;
   private boolean active = true;
   private Instant createdAt = Instant.now();
   private Instant updatedAt = Instant.now();

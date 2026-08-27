@@ -1,13 +1,18 @@
 import Link from 'next/link'
 import { Plus } from 'lucide-react'
 import { money, type Product } from '../lib/types'
+import { placeholderImage } from '../lib/placeholder'
 
 export function ProductCard({ product, onAdd }: { product: Product; onAdd: (product: Product) => void }) {
   const outOfStock = product.stockQuantity <= 0
   return (
     <article className="product-card">
       <Link href={`/products/${product.id}`} className="product-image">
-        <img src={product.imageUrl || 'https://placehold.co/600x600/e8e5df/171717?text=PrintForge'} alt={product.name} />
+        <img
+          src={product.imageUrl || placeholderImage(product.name, product.id)}
+          alt={product.name}
+          onError={e => { e.currentTarget.onerror = null; e.currentTarget.src = placeholderImage(product.name, product.id) }}
+        />
       </Link>
       <div className="product-meta">
         <div className="product-category">{product.category} · {product.material}</div>

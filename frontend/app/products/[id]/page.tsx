@@ -6,6 +6,7 @@ import { Header } from '../../../components/Header'
 import { useCart } from '../../../lib/cart-context'
 import { api, ApiError } from '../../../lib/api'
 import { money, type Product } from '../../../lib/types'
+import { placeholderImage } from '../../../lib/placeholder'
 
 export default function ProductDetailPage() {
   const params = useParams<{ id: string }>()
@@ -46,7 +47,12 @@ export default function ProductDetailPage() {
       <Header />
       <section className="shell section" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 50, paddingTop: 50 }}>
         <div className="product-image" style={{ height: 460 }}>
-          <img src={product.imageUrl || 'https://placehold.co/700x700/e8e5df/171717?text=PrintForge'} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover', mixBlendMode: 'multiply' }} />
+          <img
+            src={product.imageUrl || placeholderImage(product.name, product.id)}
+            alt={product.name}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', mixBlendMode: 'multiply' }}
+            onError={e => { e.currentTarget.onerror = null; e.currentTarget.src = placeholderImage(product.name, product.id) }}
+          />
         </div>
         <div>
           <div className="eyebrow">{product.category}</div>
@@ -75,7 +81,13 @@ export default function ProductDetailPage() {
           <div className="product-grid">
             {related.map(item => (
               <a className="product-card" key={item.id} href={`/products/${item.id}`}>
-                <div className="product-image"><img src={item.imageUrl || 'https://placehold.co/600x600/e8e5df/171717?text=PrintForge'} alt={item.name} /></div>
+                <div className="product-image">
+                  <img
+                    src={item.imageUrl || placeholderImage(item.name, item.id)}
+                    alt={item.name}
+                    onError={e => { e.currentTarget.onerror = null; e.currentTarget.src = placeholderImage(item.name, item.id) }}
+                  />
+                </div>
                 <div className="product-meta"><div className="product-category">{item.category}</div><div className="product-name">{item.name}</div><div className="price">{money(item.price)}</div></div>
               </a>
             ))}
