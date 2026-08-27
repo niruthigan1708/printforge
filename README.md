@@ -20,7 +20,7 @@ Built as a realistic, portfolio-quality MVP — clean layered architecture, real
 
 **Admin**
 - Dashboard with key stats (products, orders, pending orders, custom requests, revenue) and recent activity
-- Full product CRUD with stock and category management
+- Full product CRUD with stock and category management, plus a real photo upload per product
 - Category CRUD (delete blocked while products still reference it)
 - Order list and status management
 - Custom print request review: download the uploaded file, send a quote, update production status
@@ -71,6 +71,8 @@ JWT bearer tokens, BCrypt password hashing. Public registration always creates a
 | POST | `/api/auth/login` | Public | Log in, returns `{token, id, name, email, role}` |
 | GET | `/api/products` | Public | List products (`?search=`, `?category=`) |
 | GET | `/api/products/{id}` | Public | Product detail |
+| GET | `/api/products/{id}/image` | Public | Product photo — serves the uploaded file, else redirects to the admin-set image URL, else a generated placeholder |
+| POST | `/api/products/{id}/image` | ADMIN | Upload/replace a product's photo (multipart: `file`, max 5MB, JPG/PNG/WEBP/GIF) |
 | POST/PUT/DELETE | `/api/products[/{id}]` | ADMIN | Manage products |
 | GET | `/api/categories` | Public | List categories |
 | POST/PUT/DELETE | `/api/categories[/{id}]` | ADMIN | Manage categories (delete blocked if products reference it) |
@@ -125,6 +127,7 @@ See [`.env.example`](.env.example). Never commit a real `.env` — both `backend
 | `JWT_SECRET` | backend | HMAC signing key for JWTs — set to a long random value |
 | `JWT_EXPIRATION` | backend | Token lifetime in ms (default 24h) |
 | `UPLOAD_DIR` | backend | Where custom-print uploads are stored (default `backend/uploads/custom-prints`) |
+| `PRODUCT_IMAGE_DIR` | backend | Where uploaded product photos are stored (default `backend/uploads/products`) |
 | `NEXT_PUBLIC_API_URL` | frontend | Base URL the browser calls (default `http://localhost:8080/api`) |
 
 ## Demo Accounts
