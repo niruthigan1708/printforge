@@ -5,10 +5,10 @@ const TONES: Record<string, string> = {
   UNDER_REVIEW: 'badge-blue',
   PRINTING: 'badge-orange',
   IN_PRODUCTION: 'badge-orange',
-  READY: 'badge-lime',
-  QUOTED: 'badge-lime',
+  READY: 'badge-green',
+  QUOTED: 'badge-blue',
   SHIPPED: 'badge-blue',
-  ACCEPTED: 'badge-lime',
+  ACCEPTED: 'badge-green',
   DELIVERED: 'badge-green',
   COMPLETED: 'badge-green',
   CANCELLED: 'badge-red',
@@ -17,5 +17,11 @@ const TONES: Record<string, string> = {
 
 export function StatusBadge({ status }: { status: string }) {
   const tone = TONES[status] || 'badge-neutral'
-  return <span className={`badge ${tone}`}>{status.replace('_', ' ')}</span>
+  const label = status.replace(/_/g, ' ')
+  return (
+    <span className={`badge ${tone}`}>
+      <span className="badge-dot" />
+      {label}
+    </span>
+  )
 }

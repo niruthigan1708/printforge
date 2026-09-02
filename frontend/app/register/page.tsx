@@ -1,6 +1,7 @@
 'use client'
+
 import Link from 'next/link'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, Box } from 'lucide-react'
 import { FormEvent, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Header } from '../../components/Header'
@@ -33,17 +34,93 @@ export default function RegisterPage() {
   return (
     <main>
       <Header />
-      <section className="shell auth">
-        <div className="eyebrow">Join the workshop</div>
-        <h1 className="page-title">Make room<br />for <span style={{ color: 'var(--orange)' }}>better.</span></h1>
-        <form onSubmit={submit}>
+
+      <section className="shell" style={{ padding: '70px 0 100px', display: 'grid', placeItems: 'center' }}>
+        <div
+          className="form-card"
+          style={{
+            width: '100%',
+            maxWidth: 480,
+            padding: '40px 36px',
+            boxShadow: 'var(--shadow-lg)',
+          }}
+        >
+          <div style={{ textAlign: 'center', marginBottom: 28 }}>
+            <div
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 'var(--radius-md)',
+                background: 'linear-gradient(135deg, #FF7733 0%, var(--accent-primary) 100%)',
+                color: 'white',
+                display: 'grid',
+                placeItems: 'center',
+                margin: '0 auto 16px',
+                boxShadow: 'var(--shadow-orange)',
+              }}
+            >
+              <Box size={26} />
+            </div>
+            <div className="eyebrow" style={{ justifyContent: 'center' }}>Join PrintForge</div>
+            <h1 style={{ fontSize: 28, margin: '4px 0 8px' }}>Create an account</h1>
+            <p style={{ fontSize: 14, color: 'var(--text-secondary)' }}>
+              Join the studio to order catalog creations and request custom 3D fabrications.
+            </p>
+          </div>
+
           {error && <div className="alert alert-error">{error}</div>}
-          <label>Name<input required placeholder="Your name" value={name} onChange={e => setName(e.target.value)} /></label>
-          <label>Email<input required type="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} /></label>
-          <label>Password<input required minLength={8} type="password" placeholder="At least 8 characters" value={password} onChange={e => setPassword(e.target.value)} /></label>
-          <button className="btn orange" type="submit" disabled={submitting}>{submitting ? 'Creating account…' : 'Create account'} <ArrowRight size={15} /></button>
-        </form>
-        <p className="fine-print">Already have an account? <Link href="/login">Log in</Link></p>
+
+          <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <label>
+              Full Name
+              <input
+                required
+                placeholder="e.g. Maya Fernando"
+                value={name}
+                onChange={e => setName(e.target.value)}
+              />
+            </label>
+
+            <label>
+              Email Address
+              <input
+                required
+                type="email"
+                placeholder="maya@example.com"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+              />
+            </label>
+
+            <label>
+              Password
+              <input
+                required
+                minLength={8}
+                type="password"
+                placeholder="At least 8 characters"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+              />
+            </label>
+
+            <button
+              className="btn btn-primary"
+              type="submit"
+              disabled={submitting}
+              style={{ padding: '14px 20px', marginTop: 8 }}
+            >
+              {submitting ? 'Creating account…' : 'Create Account'} <ArrowRight size={16} />
+            </button>
+          </form>
+
+          <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--text-secondary)', marginTop: 24 }}>
+            Already registered?{' '}
+            <Link href="/login" style={{ color: 'var(--accent-primary)', fontWeight: 700 }}>
+              Sign in here
+            </Link>
+          </p>
+        </div>
       </section>
     </main>
   )

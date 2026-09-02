@@ -1,6 +1,7 @@
 'use client'
+
 import Link from 'next/link'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, Box, ShieldCheck, User } from 'lucide-react'
 import { FormEvent, Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Header } from '../../components/Header'
@@ -24,31 +25,137 @@ function LoginPageInner() {
       await login(email, password)
       router.push(searchParams.get('redirect') || '/')
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not log in. Please try again.')
+      setError(err instanceof ApiError ? err.message : 'Invalid credentials. Please check and try again.')
     } finally {
       setSubmitting(false)
     }
   }
 
+  function fillDemo(demoEmail: string, demoPass: string) {
+    setEmail(demoEmail)
+    setPassword(demoPass)
+  }
+
   return (
     <main>
       <Header />
-      <section className="shell auth">
-        <div className="eyebrow">Welcome back</div>
-        <h1 className="page-title">Good to<br /><span style={{ color: 'var(--orange)' }}>see you.</span></h1>
-        <form onSubmit={submit}>
+
+      <section className="shell" style={{ padding: '70px 0 100px', display: 'grid', placeItems: 'center' }}>
+        <div
+          className="form-card"
+          style={{
+            width: '100%',
+            maxWidth: 480,
+            padding: '40px 36px',
+            boxShadow: 'var(--shadow-lg)',
+          }}
+        >
+          <div style={{ textAlign: 'center', marginBottom: 28 }}>
+            <div
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 'var(--radius-md)',
+                background: 'linear-gradient(135deg, #FF7733 0%, var(--accent-primary) 100%)',
+                color: 'white',
+                display: 'grid',
+                placeItems: 'center',
+                margin: '0 auto 16px',
+                boxShadow: 'var(--shadow-orange)',
+              }}
+            >
+              <Box size={26} />
+            </div>
+            <div className="eyebrow" style={{ justifyContent: 'center' }}>PrintForge Access</div>
+            <h1 style={{ fontSize: 28, margin: '4px 0 8px' }}>Welcome back</h1>
+            <p style={{ fontSize: 14, color: 'var(--text-secondary)' }}>
+              Sign in to manage your 3D orders and custom print quotes.
+            </p>
+          </div>
+
           {error && <div className="alert alert-error">{error}</div>}
-          <label>Email<input required type="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} /></label>
-          <label>Password<input required type="password" placeholder="Your password" value={password} onChange={e => setPassword(e.target.value)} /></label>
-          <button className="btn orange" type="submit" disabled={submitting}>{submitting ? 'Logging in…' : 'Log in'} <ArrowRight size={15} /></button>
-        </form>
-        <p className="fine-print">New to PrintForge? <Link href="/register">Create an account</Link></p>
-        <p className="fine-print">Demo accounts: admin@printforge.com / customer@printforge.com</p>
+
+          <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <label>
+              Email Address
+              <input
+                required
+                type="email"
+                placeholder="name@example.com"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+              />
+            </label>
+
+            <label>
+              Password
+              <input
+                required
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+              />
+            </label>
+
+            <button
+              className="btn btn-primary"
+              type="submit"
+              disabled={submitting}
+              style={{ padding: '14px 20px', marginTop: 8 }}
+            >
+              {submitting ? 'Authenticating…' : 'Sign In'} <ArrowRight size={16} />
+            </button>
+          </form>
+
+          {/* Demo Account Quick Fill Helpers */}
+          <div
+            style={{
+              marginTop: 28,
+              paddingTop: 20,
+              borderTop: '1px solid var(--border-subtle)',
+              fontSize: 13,
+            }}
+          >
+            <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 10 }}>
+              Quick Demo Login:
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                type="button"
+                className="btn btn-sm secondary"
+                style={{ flex: 1, fontSize: 12 }}
+                onClick={() => fillDemo('customer@printforge.com', 'Customer@12345')}
+              >
+                <User size={13} /> Customer
+              </button>
+              <button
+                type="button"
+                className="btn btn-sm secondary"
+                style={{ flex: 1, fontSize: 12 }}
+                onClick={() => fillDemo('admin@printforge.com', 'Admin@12345')}
+              >
+                <ShieldCheck size={13} /> Admin
+              </button>
+            </div>
+          </div>
+
+          <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--text-secondary)', marginTop: 20 }}>
+            Don't have an account?{' '}
+            <Link href="/register" style={{ color: 'var(--accent-primary)', fontWeight: 700 }}>
+              Sign up here
+            </Link>
+          </p>
+        </div>
       </section>
     </main>
   )
 }
 
 export default function LoginPage() {
-  return <Suspense fallback={null}><LoginPageInner /></Suspense>
+  return (
+    <Suspense fallback={null}>
+      <LoginPageInner />
+    </Suspense>
+  )
 }
