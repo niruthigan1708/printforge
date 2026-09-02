@@ -31,6 +31,8 @@ public class ProductService {
 
   public ProductResponse findById(Long id) { return ProductResponse.from(products.findById(id).orElseThrow(() -> new EntityNotFoundException("Product not found"))); }
 
+  public List<ProductResponse> findAllForAdmin() { return products.findAllByOrderByCreatedAtDesc().stream().map(ProductResponse::from).toList(); }
+
   @Transactional
   public ProductResponse create(ProductRequest request) {
     Category category = categories.findById(request.categoryId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Category not found"));

@@ -5,3 +5,4 @@ node_modules
 uploads/
 target/
 *.log
+*.tsbuildinfo
