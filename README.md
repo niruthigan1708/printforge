@@ -9,7 +9,8 @@ Built as a realistic, portfolio-quality MVP — clean layered architecture, real
 ## Features
 
 **Customer**
-- Register / log in (JWT, BCrypt-hashed passwords)
+- Register / log in (JWT in an httpOnly cookie, BCrypt-hashed passwords)
+- Forgot password (emailed one-time link), account settings (name, change password)
 - Browse, search, filter, and sort the product catalogue
 - Product detail pages with related products
 - Cart with quantity controls, persisted locally
@@ -98,6 +99,10 @@ A token only identifies the user: on every request the server re-reads the accou
 | POST | `/api/auth/login` | Public | Log in; sets the httpOnly session cookie, returns `{id, name, email, role}` (never the token) |
 | GET | `/api/auth/me` | Authenticated | The signed-in user (used to restore a browser session) |
 | GET | `/api/auth/csrf` | Public | `{headerName, token}` to echo on cookie-authenticated writes |
+| POST | `/api/auth/forgot-password` | Public | Email a one-time reset link (always `202`, so it never reveals whether an account exists; rate-limited) |
+| POST | `/api/auth/reset-password` | Public | `{token, password}`: set a new password from a reset link (30-minute, single-use); signs out everywhere |
+| GET/PUT | `/api/account` | Authenticated | View the account / change the name |
+| PUT | `/api/account/password` | Authenticated | `{currentPassword, newPassword}`: other sessions are signed out, this one gets a fresh cookie |
 | POST | `/api/auth/logout` | Authenticated | Revoke all of the caller's tokens (every device); `204` |
 | GET | `/api/products` | Public | List active products (`?search=` and `?category=` combine; `?ids=1,2,3` returns just those, max 100) |
 | GET | `/api/products/{id}` | Public | Product detail (404 for inactive/archived products) |
@@ -170,6 +175,8 @@ See [`.env.example`](.env.example). The backend loads `backend/.env` automatical
 | `FREE_DELIVERY_THRESHOLD` | backend | Orders with a subtotal at or above this ship free (default `5000`); `0` switches free delivery off |
 | `MAX_FAILED_LOGINS_PER_ACCOUNT`, `MAX_FAILED_LOGINS_PER_IP`, `LOGIN_LOCKOUT_WINDOW` | backend | Login throttling (defaults `5`, `20`, `15m`): after that many failed logins within the window, further attempts get `429` with `Retry-After` |
 | `FORWARD_HEADERS_STRATEGY`, `TRUSTED_PROXIES` | backend | Behind a reverse proxy the client IP comes from `X-Forwarded-For` (default `native`), honoured only from trusted proxy addresses (default: private and loopback ranges, as a CIDR list). Set `TRUSTED_PROXIES` if your load balancer has a public address, or `FORWARD_HEADERS_STRATEGY=none` if nothing sits in front of the app |
+| `FRONTEND_URL` | backend | Public address of the frontend, used for links in emails (default `http://localhost:3000`) |
+| `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM` | backend | SMTP for password reset emails (port `587` with STARTTLS by default; `MAIL_SMTP_AUTH`, `MAIL_STARTTLS` to adjust). If `MAIL_HOST` is empty, as in local development, reset links are written to the backend log instead — always configure SMTP in a real deployment |
 | `CORS_ALLOWED_ORIGINS` | backend | Comma-separated origins the browser may call the API from (default `http://localhost:3000`); set to your deployed frontend URL |
 | `NEXT_PUBLIC_API_URL` | frontend | Base URL the browser calls (default `http://localhost:8080/api`) |
 
