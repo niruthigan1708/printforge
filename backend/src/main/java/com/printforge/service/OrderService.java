@@ -39,7 +39,7 @@ public class OrderService {
       product.setStockQuantity(product.getStockQuantity() - quantity);
       OrderItem item = new OrderItem(); item.setOrder(order); item.setProduct(product); item.setProductName(product.getName()); item.setQuantity(quantity); item.setUnitPrice(product.getPrice()); item.setSubtotal(product.getPrice().multiply(BigDecimal.valueOf(quantity))); order.getItems().add(item); subtotal = subtotal.add(item.getSubtotal());
     }
-    order.setSubtotal(subtotal); order.setDeliveryFee(shopSettings.deliveryFee()); order.setTotalAmount(subtotal.add(order.getDeliveryFee())); order.setShippingName(request.shippingName()); order.setShippingPhone(request.shippingPhone()); order.setShippingAddress(request.shippingAddress()); order.setShippingCity(request.shippingCity()); order.setShippingPostalCode(request.shippingPostalCode());
+    order.setSubtotal(subtotal); order.setDeliveryFee(shopSettings.deliveryFeeFor(subtotal)); order.setTotalAmount(subtotal.add(order.getDeliveryFee())); order.setShippingName(request.shippingName()); order.setShippingPhone(request.shippingPhone()); order.setShippingAddress(request.shippingAddress()); order.setShippingCity(request.shippingCity()); order.setShippingPostalCode(request.shippingPostalCode());
     // The cart shows prices saved when items were added. If a price or the delivery fee changed
     // since, refuse rather than charge a different amount than the customer agreed to. Throwing
     // rolls back the stock deducted above.

@@ -12,7 +12,8 @@ import java.math.BigDecimal;
 public class ShopSettingsController {
   private final ShopSettings settings;
 
-  public record Response(BigDecimal deliveryFee) { }
+  /** freeDeliveryThreshold is null when free delivery is switched off. */
+  public record Response(BigDecimal deliveryFee, BigDecimal freeDeliveryThreshold) { }
 
-  @GetMapping public Response get() { return new Response(settings.deliveryFee()); }
+  @GetMapping public Response get() { return new Response(settings.deliveryFee(), settings.freeDeliveryThreshold()); }
 }
