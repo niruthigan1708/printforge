@@ -158,6 +158,7 @@ See [`.env.example`](.env.example). The backend loads `backend/.env` automatical
 | `SEED_DEMO_DATA` | backend | `true` to create the demo accounts and products on first boot against an empty database (default off; local development only) |
 | `JWT_EXPIRATION` | backend | Token lifetime in ms (default 24h) |
 | `UPLOAD_DIR` | backend | Where custom-print uploads are stored (default `backend/uploads/custom-prints`) |
+| `CLOSED_UPLOAD_RETENTION_DAYS` | backend | Days after which a rejected or cancelled custom print request's model file is deleted by a daily job (default `30`; `0` keeps files forever). Completed requests keep theirs for reprints |
 | `PRODUCT_IMAGE_DIR` | backend | Where uploaded product photos are stored (default `backend/uploads/products`) |
 | `DELIVERY_FEE` | backend | Flat delivery fee per order in Rs. (default `350`). The storefront reads it from `GET /api/shop/settings` |
 | `FREE_DELIVERY_THRESHOLD` | backend | Orders with a subtotal at or above this ship free (default `5000`); `0` switches free delivery off |
