@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service @RequiredArgsConstructor
@@ -20,6 +21,12 @@ public class AuthService {
     User user = new User(); user.setName(request.name()); user.setEmail(request.email().toLowerCase()); user.setPassword(encoder.encode(request.password())); user.setRole(Role.CUSTOMER);
     user = users.save(user); return AuthResponse.from(jwt.create(user), user);
   }
+  /** Revokes every token issued to this user (all devices), by bumping their token version. */
+  @Transactional
+  public void logout(String email) {
+    users.findByEmailIgnoreCase(email).ifPresent(user -> user.setTokenVersion(user.getTokenVersion() + 1));
+  }
+
   public AuthResponse login(LoginRequest request, String clientIp) {
     // Checked before the password, so a locked-out guesser learns nothing from further tries.
     loginAttempts.checkAllowed(request.email(), clientIp);

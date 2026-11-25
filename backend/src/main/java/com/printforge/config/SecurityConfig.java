@@ -20,6 +20,8 @@ public class SecurityConfig {
   @Bean SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwtFilter) throws Exception {
     return http.csrf(csrf -> csrf.disable()).cors(cors -> {}).sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
       .authorizeHttpRequests(auth -> auth
+        // Logging out needs a valid session; the rest of /api/auth is public.
+        .requestMatchers(HttpMethod.POST, "/api/auth/logout").authenticated()
         .requestMatchers("/api/auth/**").permitAll()
         .requestMatchers(HttpMethod.GET, "/api/products/**", "/api/categories/**", "/api/shop/**").permitAll()
         .requestMatchers("/api/admin/**").hasRole("ADMIN")
