@@ -105,7 +105,7 @@ export function ProductForm({ product }: { product?: Product }) {
   async function reloadStock() {
     if (!product) return
     try {
-      const latest = await api.get<Product>(`/products/${product.id}`)
+      const latest = await api.get<Product>(`/admin/products/${product.id}`)
       setLoadedStock(latest.stockQuantity)
       setValues(current => ({ ...current, stockQuantity: String(latest.stockQuantity) }))
       setStockConflict(false)

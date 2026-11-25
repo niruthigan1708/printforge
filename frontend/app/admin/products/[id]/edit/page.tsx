@@ -11,7 +11,8 @@ export default function EditProductPage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    api.get<Product>(`/products/${params.id}`).then(setProduct).catch(err => setError(err instanceof ApiError ? err.message : 'Product not found.'))
+    // Admin lookup: the public endpoint hides archived products, which must stay editable.
+    api.get<Product>(`/admin/products/${params.id}`).then(setProduct).catch(err => setError(err instanceof ApiError ? err.message : 'Product not found.'))
   }, [params.id])
 
   return (
