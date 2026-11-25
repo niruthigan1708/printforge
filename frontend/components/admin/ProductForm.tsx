@@ -42,6 +42,10 @@ export function ProductForm({ product }: { product?: Product }) {
   const [photoError, setPhotoError] = useState('')
   const [photoNotice, setPhotoNotice] = useState('')
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
+  // The stock value this form was loaded with. Sent with updates so the server can tell an
+  // untouched stock field (keep live stock) from an edit made against a stale number.
+  const [loadedStock, setLoadedStock] = useState<number | null>(product ? product.stockQuantity : null)
+  const [stockConflict, setStockConflict] = useState(false)
 
   useEffect(() => {
     api.get<Category[]>('/categories').then(setCategories).catch(() => {})
@@ -85,13 +89,29 @@ export function ProductForm({ product }: { product?: Product }) {
         categoryId: Number(values.categoryId),
         active: values.active,
       }
-      if (product) await api.put(`/products/${product.id}`, body)
+      setStockConflict(false)
+      if (product) await api.put(`/products/${product.id}`, { ...body, expectedStockQuantity: loadedStock })
       else await api.post('/products', body)
       router.push('/admin/products')
     } catch (err) {
+      if (product && err instanceof ApiError && err.status === 409) setStockConflict(true)
       setError(err instanceof ApiError ? err.message : 'Could not save this product.')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  /** After a stock conflict: take the live stock as the new baseline and show it in the field. */
+  async function reloadStock() {
+    if (!product) return
+    try {
+      const latest = await api.get<Product>(`/products/${product.id}`)
+      setLoadedStock(latest.stockQuantity)
+      setValues(current => ({ ...current, stockQuantity: String(latest.stockQuantity) }))
+      setStockConflict(false)
+      setError('')
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not load the current stock.')
     }
   }
 
@@ -177,7 +197,16 @@ export function ProductForm({ product }: { product?: Product }) {
           {product ? 'Edit Product Details' : 'Create New 3D Printed Object'}
         </h3>
 
-        {error && <div className="alert alert-error">{error}</div>}
+        {error && (
+          <div className="alert alert-error">
+            {error}
+            {stockConflict && (
+              <button type="button" className="link-btn" onClick={reloadStock} style={{ marginLeft: 8 }}>
+                Load current stock
+              </button>
+            )}
+          </div>
+        )}
 
         <label>
           Object Name
