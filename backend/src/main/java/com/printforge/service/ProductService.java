@@ -35,6 +35,14 @@ public class ProductService {
     return result.stream().map(ProductResponse::from).toList();
   }
 
+  private static final int MAX_IDS_PER_LOOKUP = 100;
+
+  /** Active products among {@code ids}; missing or inactive ones are simply absent from the result. */
+  public List<ProductResponse> findActiveByIds(List<Long> ids) {
+    if (ids.size() > MAX_IDS_PER_LOOKUP) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "At most " + MAX_IDS_PER_LOOKUP + " product ids can be requested at once");
+    return products.findAllById(ids).stream().filter(Product::isActive).map(ProductResponse::from).toList();
+  }
+
   /** Public lookup: archived/inactive products are hidden, exactly as in the catalogue listing. */
   public ProductResponse findActiveById(Long id) {
     return products.findById(id).filter(Product::isActive).map(ProductResponse::from).orElseThrow(() -> new EntityNotFoundException("Product not found"));

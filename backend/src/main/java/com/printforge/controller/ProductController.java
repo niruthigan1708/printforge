@@ -25,7 +25,11 @@ public class ProductController {
   private final ProductService service;
   private final ProductImageService productImages;
 
-  @GetMapping public List<ProductResponse> list(@RequestParam(required = false) String search, @RequestParam(required = false) String category) { return service.find(search, category); }
+  /** With ?ids=1,2,3 returns just those (active) products, so a cart can refresh prices and stock in one call. */
+  @GetMapping public List<ProductResponse> list(@RequestParam(required = false) String search, @RequestParam(required = false) String category, @RequestParam(required = false) List<Long> ids) {
+    if (ids != null && !ids.isEmpty()) return service.findActiveByIds(ids);
+    return service.find(search, category);
+  }
   @GetMapping("/{id}") public ProductResponse get(@PathVariable Long id) { return service.findActiveById(id); }
 
   @GetMapping("/{id}/image")
