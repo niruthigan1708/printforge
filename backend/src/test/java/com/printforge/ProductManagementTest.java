@@ -71,6 +71,19 @@ class ProductManagementTest {
     mvc.perform(get("/api/products")).andExpect(jsonPath("$[?(@.id == " + id + ")]").isEmpty());
   }
 
+  @Test void searchAndCategoryFiltersAreAppliedTogether() throws Exception {
+    String adminToken = tokens.tokenFor("filter-admin@example.com", Role.ADMIN);
+    createProduct(adminToken, "Zephyr Stand", "Zephyr Gaming");
+    createProduct(adminToken, "Zephyr Stand Desk", "Zephyr Desk");
+
+    mvc.perform(get("/api/products").param("search", "zephyr").param("category", "Zephyr Gaming"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.length()").value(1))
+      .andExpect(jsonPath("$[0].name").value("Zephyr Stand"));
+    mvc.perform(get("/api/products").param("search", "zephyr"))
+      .andExpect(jsonPath("$.length()").value(2));
+  }
+
   @Test void nonAdminCannotCreateProduct() throws Exception {
     Category category = categories.save(new Category("Gaming", "Gaming stuff"));
     String customerToken = tokens.tokenFor("product-customer@example.com", Role.CUSTOMER);
