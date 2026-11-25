@@ -143,7 +143,7 @@ export default function AdminProductsPage() {
               {products.length === 0 && (
                 <tr>
                   <td colSpan={7} style={{ textAlign: 'center', padding: '36px' }}>
-                    No products added yet. Click "Add New Object" to get started.
+                    No products added yet. Click &quot;Add New Object&quot; to get started.
                   </td>
                 </tr>
               )}

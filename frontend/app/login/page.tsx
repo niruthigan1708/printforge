@@ -146,7 +146,7 @@ function LoginPageInner() {
           </div>
 
           <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--text-secondary)', marginTop: 20 }}>
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <Link href="/register" style={{ color: 'var(--accent-primary)', fontWeight: 700 }}>
               Sign up here
             </Link>

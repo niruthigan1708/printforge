@@ -155,7 +155,7 @@ function CustomPrintDetail() {
               </h3>
               {request.adminNotes && (
                 <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginBottom: 16 }}>
-                  <b>Engineer's Notes:</b> {request.adminNotes}
+                  <b>Engineer&apos;s Notes:</b> {request.adminNotes}
                 </p>
               )}
 

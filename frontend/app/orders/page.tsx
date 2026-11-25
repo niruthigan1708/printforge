@@ -28,7 +28,7 @@ function OrdersList() {
       <section className="shell page-intro compact" style={{ padding: '50px 0 30px' }}>
         <div className="eyebrow">Customer Dashboard · Orders</div>
         <h1 className="page-title">
-          Track what you've<br />
+          Track what you&apos;ve<br />
           <span style={{ color: 'var(--accent-primary)' }}>ordered & printed.</span>
         </h1>
       </section>

@@ -364,7 +364,7 @@ function CustomPrintForm() {
                 </div>
 
                 <div style={{ marginTop: 14, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                  There's no automated pricing here — we don't guess at a number before actually looking at your file. Our team inspects the geometry, slices it, and sends you a firm quote you can accept or decline.
+                  There&apos;s no automated pricing here — we don&apos;t guess at a number before actually looking at your file. Our team inspects the geometry, slices it, and sends you a firm quote you can accept or decline.
                 </div>
               </div>
 
