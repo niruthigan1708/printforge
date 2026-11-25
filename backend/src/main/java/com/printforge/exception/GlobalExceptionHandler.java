@@ -1,6 +1,7 @@
 package com.printforge.exception;
 
 import com.printforge.dto.ErrorResponse;
+import org.springframework.dao.DataIntegrityViolationException;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -39,7 +40,22 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
     Map<String, String> errors = new HashMap<>();
     ex.getBindingResult().getFieldErrors().forEach(fieldError -> errors.put(fieldError.getField(), fieldError.getDefaultMessage()));
-    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse("Validation failed", HttpStatus.BAD_REQUEST.value(), errors));
+    // The UI shows `message`, so spell out which fields failed rather than just "Validation failed".
+    String detail = errors.entrySet().stream().sorted(Map.Entry.comparingByKey())
+      .map(entry -> entry.getKey() + " " + entry.getValue()).collect(java.util.stream.Collectors.joining("; "));
+    String message = detail.isEmpty() ? "Validation failed" : "Validation failed: " + detail;
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse(message, HttpStatus.BAD_REQUEST.value(), errors));
+  }
+
+  /**
+   * Safety net for anything the database itself rejects (a value too long for its column, a
+   * unique or foreign-key constraint) that validation did not catch: the request conflicts
+   * with what can be stored, which is not a server crash.
+   */
+  @ExceptionHandler(DataIntegrityViolationException.class)
+  public ResponseEntity<ErrorResponse> handleDataIntegrity(DataIntegrityViolationException ex) {
+    log.warn("Database rejected a write: {}", ex.getMostSpecificCause().getMessage());
+    return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse("The request could not be saved because a value is invalid or conflicts with existing data", HttpStatus.CONFLICT.value()));
   }
 
   @ExceptionHandler(IllegalArgumentException.class)
