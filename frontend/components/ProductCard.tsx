@@ -14,7 +14,7 @@ export function ProductCard({ product, onAdd }: { product: Product; onAdd: (prod
     <article className="product-card">
       <Link href={`/products/${product.id}`} className="product-image" aria-label={product.name}>
         <img
-          src={productImageUrl(product.id)}
+          src={productImageUrl(product.id, product.imageVersion)}
           alt={product.name}
           loading="lazy"
           onError={e => {

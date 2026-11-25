@@ -17,6 +17,8 @@ export type Product = {
   imageUrl: string | null
   category: string
   active: boolean
+  /** Changes whenever the photo changes; pass to productImageUrl for cache-safe URLs. */
+  imageVersion: string
 }
 
 export type AuthResponse = { token: string; id: number; name: string; email: string; role: Role }

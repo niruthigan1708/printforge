@@ -69,6 +69,11 @@ export const api = {
   postForm: <T,>(path: string, form: FormData) => request<T>(path, { method: 'POST', body: form }),
 }
 
-export const productImageUrl = (productId: number) => `${API_URL}/products/${productId}/image`
+/**
+ * Pass the product's imageVersion whenever you have it: a versioned URL is cached long-term and
+ * changes when the photo changes. Without it the browser revalidates the photo on every use.
+ */
+export const productImageUrl = (productId: number, version?: string | null) =>
+  `${API_URL}/products/${productId}/image${version ? `?v=${encodeURIComponent(version)}` : ''}`
 
 export { API_URL, TOKEN_KEY }
