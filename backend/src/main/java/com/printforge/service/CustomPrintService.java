@@ -15,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 @Service @RequiredArgsConstructor
 public class CustomPrintService {
@@ -32,7 +33,8 @@ public class CustomPrintService {
     FileStorageService.StoredFile stored = fileStorage.store(file);
     CustomPrintRequest request = new CustomPrintRequest();
     request.setCustomer(customer);
-    request.setRequestNumber("CR-" + (1001 + requests.count()));
+    // Temporary unique value; replaced with the id-based number once the row has an id.
+    request.setRequestNumber("CR-PENDING-" + UUID.randomUUID());
     request.setFileName(stored.originalName());
     request.setFilePath(stored.storedPath());
     request.setFileType(stored.extension());
@@ -40,8 +42,13 @@ public class CustomPrintService {
     request.setColor(color);
     request.setQuantity(quantity);
     request.setNotes(notes);
-    return CustomPrintRequestResponse.from(requests.save(request));
+    request = requests.saveAndFlush(request);
+    request.setRequestNumber(requestNumberFor(request.getId()));
+    return CustomPrintRequestResponse.from(request);
   }
+
+  /** Same id-based scheme as order numbers: unique under concurrency, above any legacy count-based number. */
+  static String requestNumberFor(long id) { return "CR-" + (1000 + id); }
 
   public List<CustomPrintRequestResponse> mine(String email) {
     User user = users.findByEmailIgnoreCase(email).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
