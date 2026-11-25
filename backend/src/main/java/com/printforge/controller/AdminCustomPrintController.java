@@ -10,9 +10,15 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.List;
 
 @RestController @RequestMapping("/api/admin/custom-prints") @RequiredArgsConstructor
@@ -26,8 +32,15 @@ public class AdminCustomPrintController {
   @GetMapping("/{id}/file")
   public ResponseEntity<Resource> file(@PathVariable Long id) {
     CustomPrintRequest request = service.findEntity(id);
-    Resource resource = new FileSystemResource(fileStorage.resolve(request.getFilePath()));
-    return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + request.getFileName() + "\"").body(resource);
+    Path path = fileStorage.locate(request.getFilePath())
+      .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "The uploaded model file is no longer available on the server"));
+    // Built with ContentDisposition so quotes, semicolons and non-ASCII characters in the
+    // customer's file name are escaped/encoded (RFC 6266 + RFC 5987) instead of breaking the header.
+    ContentDisposition disposition = ContentDisposition.attachment().filename(request.getFileName(), StandardCharsets.UTF_8).build();
+    return ResponseEntity.ok()
+      .header(HttpHeaders.CONTENT_DISPOSITION, disposition.toString())
+      .contentType(MediaType.APPLICATION_OCTET_STREAM)
+      .body(new FileSystemResource(path));
   }
 
   @PutMapping("/{id}/quote") public CustomPrintRequestResponse quote(@PathVariable Long id, @Valid @RequestBody QuoteRequest request) { return service.quote(id, request); }
