@@ -139,6 +139,7 @@ See [`.env.example`](.env.example). The backend loads `backend/.env` automatical
 | `PRODUCT_IMAGE_DIR` | backend | Where uploaded product photos are stored (default `backend/uploads/products`) |
 | `DELIVERY_FEE` | backend | Flat delivery fee per order in Rs. (default `350`). The storefront reads it from `GET /api/shop/settings` |
 | `FREE_DELIVERY_THRESHOLD` | backend | Orders with a subtotal at or above this ship free (default `5000`); `0` switches free delivery off |
+| `CORS_ALLOWED_ORIGINS` | backend | Comma-separated origins the browser may call the API from (default `http://localhost:3000`); set to your deployed frontend URL |
 | `NEXT_PUBLIC_API_URL` | frontend | Base URL the browser calls (default `http://localhost:8080/api`) |
 
 ## Demo Accounts
