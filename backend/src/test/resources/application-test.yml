@@ -1,0 +1,21 @@
+# Overrides for the test suite only. Tests run with the real src/main/resources/application.yml
+# plus this "test" profile (activated by src/test/resources/application.properties), so
+# production settings such as upload limits, proxy handling and Flyway options are exercised too.
+spring:
+  datasource:
+    # In-memory H2 in PostgreSQL mode by default; CI also runs the suite against a real
+    # PostgreSQL by setting TEST_DATABASE_URL / _USERNAME / _PASSWORD.
+    url: ${TEST_DATABASE_URL:jdbc:h2:mem:printforge;MODE=PostgreSQL;DB_CLOSE_DELAY=-1}
+    username: ${TEST_DATABASE_USERNAME:sa}
+    password: ${TEST_DATABASE_PASSWORD:}
+  jpa:
+    properties:
+      hibernate:
+        format_sql: false
+app:
+  # Never create demo accounts in tests, whatever a developer's backend/.env says.
+  seed:
+    enabled: false
+  upload-dir: target/test-uploads/custom-prints
+  product-image-dir: target/test-uploads/products
+JWT_SECRET: test-secret-key-at-least-32-characters-long

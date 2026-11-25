@@ -3,13 +3,12 @@ package com.printforge;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.beans.factory.config.YamlPropertiesFactoryBean;
-import org.springframework.core.io.FileSystemResource;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.Properties;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -20,14 +19,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * The test client connects from 127.0.0.1, a trusted proxy address by default.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
-  // The test application.yml replaces the main one, so mirror the production setting here;
-  // mainConfigEnablesForwardedHeaders() checks the main file really has it.
-  "server.forward-headers-strategy=native",
   "app.auth.max-failed-logins-per-ip=2",
   "app.auth.max-failed-logins-per-account=100",
 })
 class ForwardedClientIpTest {
   @LocalServerPort int port;
+  @Autowired Environment environment;
   private final HttpClient http = HttpClient.newHttpClient();
 
   private int login(String email, String forwardedFor) throws Exception {
@@ -56,11 +53,9 @@ class ForwardedClientIpTest {
     assertEquals(429, login("c3@example.com", "9.9.9.9, 203.0.113.99"));
   }
 
-  @Test void mainConfigEnablesForwardedHeaders() {
-    var yaml = new YamlPropertiesFactoryBean();
-    yaml.setResources(new FileSystemResource("src/main/resources/application.yml"));
-    Properties props = yaml.getObject();
-    assertEquals("${FORWARD_HEADERS_STRATEGY:native}", props.getProperty("server.forward-headers-strategy"));
-    assertTrue(props.getProperty("server.tomcat.remoteip.internal-proxies").contains("127.0.0.0/8"));
+  /** The forwarded-header handling under test comes from the real application.yml, not this test. */
+  @Test void productionConfigEnablesForwardedHeaders() {
+    assertEquals("native", environment.getProperty("server.forward-headers-strategy"));
+    assertTrue(environment.getProperty("server.tomcat.remoteip.internal-proxies").contains("127.0.0.0/8"));
   }
 }
