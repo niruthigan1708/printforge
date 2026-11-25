@@ -8,17 +8,6 @@ import { StatusBadge } from '../../../../components/StatusBadge'
 import { api, ApiError, API_URL, getToken } from '../../../../lib/api'
 import { money, type CustomPrintRequest, type RequestStatus } from '../../../../lib/types'
 
-const STATUSES: RequestStatus[] = [
-  'SUBMITTED',
-  'UNDER_REVIEW',
-  'QUOTED',
-  'ACCEPTED',
-  'REJECTED',
-  'IN_PRODUCTION',
-  'COMPLETED',
-  'CANCELLED',
-]
-
 export default function AdminCustomPrintDetailPage() {
   const params = useParams<{ id: string }>()
   const [request, setRequest] = useState<CustomPrintRequest | null>(null)
@@ -107,7 +96,9 @@ export default function AdminCustomPrintDetailPage() {
     )
   }
 
-  const locked = request.status === 'COMPLETED' || request.status === 'CANCELLED'
+  // Both come from the server's workflow rules, so the UI never offers a move the API would reject.
+  const quoteLocked = !request.canQuote
+  const statusLocked = request.nextStatuses.length === 0
 
   return (
     <div style={{ maxWidth: 880 }}>
@@ -182,6 +173,11 @@ export default function AdminCustomPrintDetailPage() {
         <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>
           Enter the calculated quotation based on filament weight, machine hours, and support removal.
         </p>
+        {quoteLocked && (
+          <p style={{ fontSize: 13, color: 'var(--text-secondary)', background: 'var(--bg-subtle)', padding: '10px 14px', borderRadius: 'var(--radius-md)', marginBottom: 16 }}>
+            The quote can no longer be changed: this request is {request.status}.
+          </p>
+        )}
 
         <form onSubmit={sendQuote} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div className="form-grid-2">
@@ -195,7 +191,7 @@ export default function AdminCustomPrintDetailPage() {
                 placeholder="2500.00"
                 value={amount}
                 onChange={e => setAmount(e.target.value)}
-                disabled={locked}
+                disabled={quoteLocked}
               />
             </label>
           </div>
@@ -207,14 +203,14 @@ export default function AdminCustomPrintDetailPage() {
               placeholder="e.g. Sliced at 0.16mm layer height with 25% gyroid infill. Tree supports will be cleaned prior to dispatch."
               value={adminNotes}
               onChange={e => setAdminNotes(e.target.value)}
-              disabled={locked}
+              disabled={quoteLocked}
             />
           </label>
 
           <button
             className="btn btn-primary"
             type="submit"
-            disabled={submitting || locked}
+            disabled={submitting || quoteLocked}
             style={{ width: 'max-content', padding: '12px 24px' }}
           >
             <Send size={15} /> {submitting ? 'Sending Quote…' : request.adminQuote ? 'Update & Resend Quote' : 'Send Formal Quote'}
@@ -229,11 +225,11 @@ export default function AdminCustomPrintDetailPage() {
           <select
             className="status-select"
             value={request.status}
-            disabled={submitting || locked}
+            disabled={submitting || statusLocked}
             onChange={e => updateStatus(e.target.value as RequestStatus)}
             style={{ minWidth: 180, padding: '10px 14px' }}
           >
-            {STATUSES.map(status => (
+            {[request.status, ...request.nextStatuses].map(status => (
               <option key={status} value={status}>
                 {status}
               </option>
