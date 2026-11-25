@@ -1,7 +1,8 @@
 'use client'
 
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
-import { api, ApiError, TOKEN_KEY } from './api'
+import { useRouter } from 'next/navigation'
+import { api, ApiError, isTokenExpired, SESSION_EXPIRED_EVENT, TOKEN_KEY } from './api'
 import type { AuthResponse, Role } from './types'
 
 const USER_KEY = 'printforge-user'
@@ -28,16 +29,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [loading, setLoading] = useState(true)
 
+  const router = useRouter()
+
+  const clearSession = useCallback(() => {
+    localStorage.removeItem(TOKEN_KEY)
+    localStorage.removeItem(USER_KEY)
+    setUser(null)
+  }, [])
+
   useEffect(() => {
     try {
       const savedToken = localStorage.getItem(TOKEN_KEY)
       const savedUser = localStorage.getItem(USER_KEY)
-      if (savedToken && savedUser) setUser(JSON.parse(savedUser))
+      // Don't restore a session whose token has already expired: every request would fail.
+      if (savedToken && savedUser && !isTokenExpired(savedToken)) setUser(JSON.parse(savedUser))
+      else if (savedToken || savedUser) clearSession()
     } catch {
       // ignore corrupted local storage
     }
     setLoading(false)
-  }, [])
+  }, [clearSession])
+
+  // The API client fires this when the server rejects our token mid-session.
+  useEffect(() => {
+    function onExpired() {
+      clearSession()
+      const here = window.location.pathname + window.location.search
+      if (!window.location.pathname.startsWith('/login')) router.replace(`/login?expired=1&redirect=${encodeURIComponent(here)}`)
+    }
+    window.addEventListener(SESSION_EXPIRED_EVENT, onExpired)
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, onExpired)
+  }, [clearSession, router])
 
   const persist = useCallback((auth: AuthResponse) => {
     const nextUser: AuthUser = { id: auth.id, name: auth.name, email: auth.email, role: auth.role }
@@ -56,11 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     persist(auth)
   }, [persist])
 
-  const logout = useCallback(() => {
-    localStorage.removeItem(TOKEN_KEY)
-    localStorage.removeItem(USER_KEY)
-    setUser(null)
-  }, [])
+  const logout = clearSession
 
   return <AuthContext.Provider value={{ user, loading, login, register, logout }}>{children}</AuthContext.Provider>
 }

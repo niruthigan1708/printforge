@@ -74,6 +74,9 @@ function LoginPageInner() {
             </p>
           </div>
 
+          {searchParams.get('expired') && !error && (
+            <div className="alert alert-error">Your session has expired. Please log in again to continue.</div>
+          )}
           {error && <div className="alert alert-error">{error}</div>}
 
           <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
