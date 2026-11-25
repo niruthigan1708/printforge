@@ -61,7 +61,7 @@ public class OrderService {
    */
   static String orderNumberFor(long id) { return "PF-" + (1000 + id); }
   @Transactional(readOnly = true)
-  public List<OrderResponse> mine(String email) { User user = users.findByEmailIgnoreCase(email).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found")); return orders.findByCustomerOrderByCreatedAtDesc(user).stream().map(OrderResponse::from).toList(); }
+  public PageResponse<OrderResponse> mine(String email, Pageable pageable) { User user = users.findByEmailIgnoreCase(email).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found")); return PageResponse.from(orders.findByCustomer(user, pageable), OrderResponse::from); }
 
   @Transactional(readOnly = true)
   public OrderResponse getMine(String email, Long id) { User user = users.findByEmailIgnoreCase(email).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found")); return OrderResponse.from(orders.findByIdAndCustomer(id, user).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"))); }

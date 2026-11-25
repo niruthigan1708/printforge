@@ -1,12 +1,12 @@
 package com.printforge.controller;
 
 import com.printforge.dto.CustomPrintRequestResponse;
+import com.printforge.dto.PageResponse;
 import com.printforge.service.CustomPrintService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import java.util.List;
 
 @RestController @RequestMapping("/api/custom-prints") @RequiredArgsConstructor
 public class CustomPrintController {
@@ -17,7 +17,10 @@ public class CustomPrintController {
     return service.create(auth.getName(), file, material, color, quantity, notes);
   }
 
-  @GetMapping public List<CustomPrintRequestResponse> mine(Authentication auth) { return service.mine(auth.getName()); }
+  /** The caller's custom print requests, newest first, paged: ?page=0&size=20 (max 100). */
+  @GetMapping public PageResponse<CustomPrintRequestResponse> mine(Authentication auth, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+    return service.mine(auth.getName(), PageResponse.newestFirst(page, size));
+  }
   @GetMapping("/{id}") public CustomPrintRequestResponse get(Authentication auth, @PathVariable Long id) { return service.getMine(auth.getName(), id); }
   @PutMapping("/{id}/accept") public CustomPrintRequestResponse accept(Authentication auth, @PathVariable Long id) { return service.accept(auth.getName(), id); }
   @PutMapping("/{id}/reject") public CustomPrintRequestResponse reject(Authentication auth, @PathVariable Long id) { return service.reject(auth.getName(), id); }

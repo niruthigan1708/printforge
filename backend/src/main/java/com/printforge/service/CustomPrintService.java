@@ -67,9 +67,10 @@ public class CustomPrintService {
   /** Same id-based scheme as order numbers: unique under concurrency, above any legacy count-based number. */
   static String requestNumberFor(long id) { return "CR-" + (1000 + id); }
 
-  public List<CustomPrintRequestResponse> mine(String email) {
+  @Transactional(readOnly = true)
+  public PageResponse<CustomPrintRequestResponse> mine(String email, Pageable pageable) {
     User user = users.findByEmailIgnoreCase(email).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
-    return requests.findByCustomerOrderByCreatedAtDesc(user).stream().map(CustomPrintRequestResponse::from).toList();
+    return PageResponse.from(requests.findByCustomer(user, pageable), CustomPrintRequestResponse::from);
   }
 
   public CustomPrintRequestResponse getMine(String email, Long id) {

@@ -4,13 +4,15 @@ import com.printforge.entity.CustomPrintRequest;
 import com.printforge.entity.RequestStatus;
 import com.printforge.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 public interface CustomPrintRequestRepository extends JpaRepository<CustomPrintRequest, Long> {
-  List<CustomPrintRequest> findByCustomerOrderByCreatedAtDesc(User customer);
+  Page<CustomPrintRequest> findByCustomer(User customer, Pageable pageable);
   Optional<CustomPrintRequest> findByIdAndCustomer(Long id, User customer);
   List<CustomPrintRequest> findTop5ByOrderByCreatedAtDesc();
 
