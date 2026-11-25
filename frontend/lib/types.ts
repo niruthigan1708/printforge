@@ -72,6 +72,9 @@ export type CustomPrintRequest = {
   canCancel: boolean
 }
 
+/** One page of a server-paged list (admin orders, products, custom prints). `page` is zero-based. */
+export type Page<T> = { content: T[]; page: number; size: number; totalElements: number; totalPages: number }
+
 export type DashboardSummary = {
   totalProducts: number
   totalOrders: number
