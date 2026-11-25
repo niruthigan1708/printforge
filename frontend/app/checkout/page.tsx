@@ -24,20 +24,19 @@ export default function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [form, setForm] = useState({
-    shippingName: '',
     shippingPhone: '',
     shippingAddress: '',
     shippingCity: '',
     shippingPostalCode: '',
   })
+  // Null until the customer edits it; until then the recipient defaults to the signed-in user's
+  // name. Derived at render, so no effect has to copy the name into state.
+  const [editedName, setEditedName] = useState<string | null>(null)
+  const shippingName = editedName ?? user?.name ?? ''
 
   useEffect(() => {
     if (!loading && !user) router.replace('/login?redirect=/checkout')
   }, [loading, user, router])
-
-  useEffect(() => {
-    if (user) setForm(current => ({ ...current, shippingName: current.shippingName || user.name }))
-  }, [user])
 
   async function submit(event: FormEvent) {
     event.preventDefault()
@@ -48,6 +47,7 @@ export default function CheckoutPage() {
       const created = await api.post<Order>('/orders', {
         items: items.map(item => ({ productId: item.productId, quantity: item.quantity })),
         ...form,
+        shippingName,
         // The server refuses the order if its total differs from the one shown here.
         expectedTotal: total,
       })
@@ -195,8 +195,8 @@ export default function CheckoutPage() {
                     required
                     placeholder="Recipient's name"
                     maxLength={100}
-                    value={form.shippingName}
-                    onChange={e => setForm({ ...form, shippingName: e.target.value })}
+                    value={shippingName}
+                    onChange={e => setEditedName(e.target.value)}
                   />
                 </label>
                 <label>
