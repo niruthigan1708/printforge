@@ -14,6 +14,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 import java.time.Instant;
@@ -39,6 +41,13 @@ public class CustomPrintService {
     if (notes != null && notes.length() > FieldLimits.LONG_TEXT) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Notes must be at most " + FieldLimits.LONG_TEXT + " characters");
     User customer = users.findByEmailIgnoreCase(email).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
     FileStorageService.StoredFile stored = fileStorage.store(file);
+    // The file is written before the row; if the transaction then fails (here or at commit),
+    // remove the file so a failed upload leaves no orphan behind.
+    TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+      @Override public void afterCompletion(int status) {
+        if (status != STATUS_COMMITTED) fileStorage.delete(stored.storedPath());
+      }
+    });
     CustomPrintRequest request = new CustomPrintRequest();
     request.setCustomer(customer);
     // Temporary unique value; replaced with the id-based number once the row has an id.

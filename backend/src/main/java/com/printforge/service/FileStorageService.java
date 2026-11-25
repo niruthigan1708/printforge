@@ -53,6 +53,18 @@ public class FileStorageService {
    * upload time, which breaks when the upload directory moves (a changed UPLOAD_DIR, a moved
    * project folder), so fall back to the same file name inside the current upload directory.
    */
+  /** Deletes a stored upload if it is still on disk. Returns false only if deletion failed. */
+  public boolean delete(String storedPath) {
+    Optional<Path> path = locate(storedPath);
+    if (path.isEmpty()) return true;
+    try {
+      Files.deleteIfExists(path.get());
+      return true;
+    } catch (IOException e) {
+      return false;
+    }
+  }
+
   public Optional<Path> locate(String storedPath) {
     if (storedPath == null || storedPath.isBlank()) return Optional.empty();
     try {
