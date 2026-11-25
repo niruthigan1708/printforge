@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
+import { connection } from 'next/server'
 import { Providers } from '../lib/providers'
 
 export const metadata: Metadata = {
@@ -14,7 +15,10 @@ export const viewport: Viewport = {
   initialScale: 1,
 }
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  // Render every page per request: the CSP nonce set in proxy.ts is new for each request, and a
+  // statically prerendered page would carry no nonce, so its scripts would be blocked.
+  await connection()
   return (
     <html lang="en">
       <head>
