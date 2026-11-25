@@ -46,28 +46,37 @@ export function ProductForm({ product }: { product?: Product }) {
   // The stock value this form was loaded with. Sent with updates so the server can tell an
   // untouched stock field (keep live stock) from an edit made against a stale number.
   const [loadedStock, setLoadedStock] = useState<number | null>(product ? product.stockQuantity : null)
-  const [stockConflict, setStockConflict] = useState(false)
+  // The product's editVersion when this form was loaded; the server rejects the save if another
+  // admin has saved or archived the product since.
+  const [loadedEditVersion, setLoadedEditVersion] = useState<number | null>(product ? product.editVersion : null)
+  // 'edit': another admin changed the product; 'stock': only the stock moved (orders).
+  const [conflict, setConflict] = useState<'edit' | 'stock' | null>(null)
 
   useEffect(() => {
     api.get<Category[]>('/categories').then(setCategories).catch(() => {})
   }, [])
 
+  /** Fills every field (and both baselines) from a freshly loaded product. */
+  function fillFrom(loaded: Product, list: Category[]) {
+    const match = list.find(c => c.name === loaded.category)
+    setValues({
+      name: loaded.name,
+      description: loaded.description,
+      price: String(loaded.price),
+      stockQuantity: String(loaded.stockQuantity),
+      material: loaded.material,
+      color: loaded.color,
+      imageUrl: loaded.imageUrl || '',
+      categoryId: match ? String(match.id) : '',
+      active: loaded.active,
+    })
+    setLoadedStock(loaded.stockQuantity)
+    setLoadedEditVersion(loaded.editVersion)
+  }
+
   useEffect(() => {
     if (!product) return
-    api.get<Category[]>('/categories').then(list => {
-      const match = list.find(c => c.name === product.category)
-      setValues({
-        name: product.name,
-        description: product.description,
-        price: String(product.price),
-        stockQuantity: String(product.stockQuantity),
-        material: product.material,
-        color: product.color,
-        imageUrl: product.imageUrl || '',
-        categoryId: match ? String(match.id) : '',
-        active: product.active,
-      })
-    })
+    api.get<Category[]>('/categories').then(list => fillFrom(product, list)).catch(() => {})
   }, [product])
 
   async function submit(event: FormEvent) {
@@ -90,13 +99,17 @@ export function ProductForm({ product }: { product?: Product }) {
         categoryId: Number(values.categoryId),
         active: values.active,
       }
-      setStockConflict(false)
-      if (product) await api.put(`/products/${product.id}`, { ...body, expectedStockQuantity: loadedStock })
+      setConflict(null)
+      if (product) await api.put(`/products/${product.id}`, { ...body, expectedStockQuantity: loadedStock, expectedEditVersion: loadedEditVersion })
       else await api.post('/products', body)
       router.push('/admin/products')
     } catch (err) {
-      if (product && err instanceof ApiError && err.status === 409) setStockConflict(true)
       setError(err instanceof ApiError ? err.message : 'Could not save this product.')
+      if (product && err instanceof ApiError && err.status === 409) {
+        // Work out which kind of conflict it was, to offer the right way forward.
+        const latest = await api.get<Product>(`/admin/products/${product.id}`).catch(() => null)
+        setConflict(latest && latest.editVersion !== loadedEditVersion ? 'edit' : 'stock')
+      }
     } finally {
       setSubmitting(false)
     }
@@ -109,10 +122,24 @@ export function ProductForm({ product }: { product?: Product }) {
       const latest = await api.get<Product>(`/admin/products/${product.id}`)
       setLoadedStock(latest.stockQuantity)
       setValues(current => ({ ...current, stockQuantity: String(latest.stockQuantity) }))
-      setStockConflict(false)
+      setConflict(null)
       setError('')
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not load the current stock.')
+    }
+  }
+
+  /** After another admin's save: replace the form with their version (this admin's edits are discarded). */
+  async function reloadProduct() {
+    if (!product) return
+    if (!confirm('Load the latest version of this product? Your unsaved changes in this form will be replaced.')) return
+    try {
+      const [latest, list] = await Promise.all([api.get<Product>(`/admin/products/${product.id}`), api.get<Category[]>('/categories')])
+      fillFrom(latest, list)
+      setConflict(null)
+      setError('')
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not load the latest version.')
     }
   }
 
@@ -201,9 +228,14 @@ export function ProductForm({ product }: { product?: Product }) {
         {error && (
           <div className="alert alert-error">
             {error}
-            {stockConflict && (
+            {conflict === 'stock' && (
               <button type="button" className="link-btn" onClick={reloadStock} style={{ marginLeft: 8 }}>
                 Load current stock
+              </button>
+            )}
+            {conflict === 'edit' && (
+              <button type="button" className="link-btn" onClick={reloadProduct} style={{ marginLeft: 8 }}>
+                Load their version
               </button>
             )}
           </div>

@@ -19,6 +19,8 @@ export type Product = {
   active: boolean
   /** Changes whenever the photo changes; pass to productImageUrl for cache-safe URLs. */
   imageVersion: string
+  /** Bumped by every admin save or archive; sent back on update to detect concurrent edits. */
+  editVersion: number
 }
 
 export type AuthResponse = { token: string; id: number; name: string; email: string; role: Role }
