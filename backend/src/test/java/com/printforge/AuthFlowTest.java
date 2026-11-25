@@ -21,7 +21,8 @@ class AuthFlowTest {
     mvc.perform(post("/api/auth/register").contentType("application/json").content(json.writeValueAsString(body)))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.role").value("CUSTOMER"))
-      .andExpect(jsonPath("$.token").isNotEmpty());
+      .andExpect(jsonPath("$.token").doesNotExist())
+      .andExpect(header().string("Set-Cookie", org.hamcrest.Matchers.allOf(org.hamcrest.Matchers.startsWith("pf_session="), org.hamcrest.Matchers.containsString("HttpOnly"), org.hamcrest.Matchers.containsString("SameSite=Lax"))));
   }
 
   @Test void registeringTheSameEmailTwiceIsRejected() throws Exception {
