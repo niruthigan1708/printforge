@@ -23,7 +23,8 @@ export type Product = {
   editVersion: number
 }
 
-export type AuthResponse = { token: string; id: number; name: string; email: string; role: Role }
+/** The signed-in user. No token: the session is an httpOnly cookie page scripts cannot read. */
+export type AuthResponse = { id: number; name: string; email: string; role: Role }
 
 export type OrderItem = { name: string; quantity: number; unitPrice: number; subtotal: number }
 
