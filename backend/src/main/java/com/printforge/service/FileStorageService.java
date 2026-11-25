@@ -31,7 +31,7 @@ public class FileStorageService {
   public StoredFile store(MultipartFile file) {
     if (file == null || file.isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A 3D model file is required");
     if (file.getSize() > MAX_SIZE_BYTES) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File exceeds the maximum allowed size of 20MB");
-    String originalName = Path.of(file.getOriginalFilename() == null ? "model" : file.getOriginalFilename()).getFileName().toString();
+    String originalName = displayName(file.getOriginalFilename());
     String extension = extensionOf(originalName);
     if (!ALLOWED_EXTENSIONS.contains(extension)) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported file type. Please upload an STL, 3MF, or OBJ file");
     String storedName = UUID.randomUUID() + "." + extension;
@@ -46,6 +46,27 @@ public class FileStorageService {
 
   public Path resolve(String storedPath) {
     return Path.of(storedPath);
+  }
+
+  private static final int MAX_DISPLAY_NAME = 200;
+
+  /**
+   * The client-supplied name, kept only for display and the download filename (files are stored
+   * under a random UUID). Strips any directory part and control characters without Path.of, which
+   * throws on names that are illegal on the server's OS, and truncates it to fit the column while
+   * keeping the extension.
+   */
+  static String displayName(String clientName) {
+    String name = clientName == null ? "" : clientName;
+    name = name.substring(Math.max(name.lastIndexOf('/'), name.lastIndexOf('\\')) + 1);
+    name = name.replaceAll("[\\p{Cntrl}]", "").trim();
+    if (name.isEmpty()) name = "model";
+    if (name.length() > MAX_DISPLAY_NAME) {
+      int dot = name.lastIndexOf('.');
+      String extension = dot > 0 && name.length() - dot <= 10 ? name.substring(dot) : "";
+      name = name.substring(0, MAX_DISPLAY_NAME - extension.length()) + extension;
+    }
+    return name;
   }
 
   private String extensionOf(String fileName) {

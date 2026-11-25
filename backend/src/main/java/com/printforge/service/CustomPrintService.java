@@ -1,6 +1,7 @@
 package com.printforge.service;
 
 import com.printforge.dto.CustomPrintRequestResponse;
+import com.printforge.dto.FieldLimits;
 import com.printforge.dto.QuoteRequest;
 import com.printforge.entity.CustomPrintRequest;
 import com.printforge.entity.RequestStatus;
@@ -28,8 +29,12 @@ public class CustomPrintService {
   @Transactional
   public CustomPrintRequestResponse create(String email, MultipartFile file, String material, String color, int quantity, String notes) {
     if (quantity < 1) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Quantity must be at least 1");
+    if (quantity > FieldLimits.MAX_QUANTITY) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Quantity must be at most " + FieldLimits.MAX_QUANTITY);
     if (material == null || !MATERIALS.contains(material.toUpperCase())) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Material must be one of PLA, PETG, or ABS");
     if (color == null || color.isBlank()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Color is required");
+    // These arrive as multipart form fields, not a validated JSON body, so check lengths here.
+    if (color.length() > FieldLimits.COLOR) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Color must be at most " + FieldLimits.COLOR + " characters");
+    if (notes != null && notes.length() > FieldLimits.LONG_TEXT) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Notes must be at most " + FieldLimits.LONG_TEXT + " characters");
     User customer = users.findByEmailIgnoreCase(email).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
     FileStorageService.StoredFile stored = fileStorage.store(file);
     CustomPrintRequest request = new CustomPrintRequest();

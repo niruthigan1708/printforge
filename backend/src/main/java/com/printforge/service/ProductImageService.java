@@ -35,7 +35,9 @@ public class ProductImageService {
   public void store(Long productId, MultipartFile file) {
     if (file == null || file.isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "An image file is required");
     if (file.getSize() > MAX_SIZE_BYTES) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Image exceeds the maximum allowed size of 5MB");
-    String originalName = Path.of(file.getOriginalFilename() == null ? "photo" : file.getOriginalFilename()).getFileName().toString();
+    // Only the extension is used (photos are stored as <productId>.<ext>). Avoid Path.of here:
+    // it throws on client names that are illegal on the server's OS.
+    String originalName = file.getOriginalFilename() == null ? "photo" : file.getOriginalFilename();
     String extension = extensionOf(originalName);
     if (!ALLOWED_EXTENSIONS.contains(extension)) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported image type. Please upload a JPG, PNG, WEBP, or GIF file");
     delete(productId);
