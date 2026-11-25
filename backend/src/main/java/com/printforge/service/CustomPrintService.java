@@ -86,6 +86,21 @@ public class CustomPrintService {
     return CustomPrintRequestResponse.from(request);
   }
 
+  /** A customer withdrawing their own request before it has been quoted. */
+  @Transactional
+  public CustomPrintRequestResponse cancelMine(String email, Long id) {
+    User user = users.findByEmailIgnoreCase(email).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
+    CustomPrintRequest request = requests.findByIdAndCustomer(id, user).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Custom print request not found"));
+    if (request.getStatus() == RequestStatus.CANCELLED) return CustomPrintRequestResponse.from(request);
+    if (!request.getStatus().customerCanCancel()) {
+      String hint = request.getStatus() == RequestStatus.QUOTED ? " You can decline the quote instead." : "";
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "A " + request.getStatus() + " request can no longer be cancelled." + hint);
+    }
+    request.setStatus(RequestStatus.CANCELLED);
+    request.setUpdatedAt(Instant.now());
+    return CustomPrintRequestResponse.from(request);
+  }
+
   public List<CustomPrintRequestResponse> all() {
     return requests.findAllByOrderByCreatedAtDesc().stream().map(CustomPrintRequestResponse::from).toList();
   }

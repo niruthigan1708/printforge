@@ -21,4 +21,6 @@ public class CustomPrintController {
   @GetMapping("/{id}") public CustomPrintRequestResponse get(Authentication auth, @PathVariable Long id) { return service.getMine(auth.getName(), id); }
   @PutMapping("/{id}/accept") public CustomPrintRequestResponse accept(Authentication auth, @PathVariable Long id) { return service.accept(auth.getName(), id); }
   @PutMapping("/{id}/reject") public CustomPrintRequestResponse reject(Authentication auth, @PathVariable Long id) { return service.reject(auth.getName(), id); }
+  /** Customers can withdraw a request until it has been quoted. */
+  @PutMapping("/{id}/cancel") public CustomPrintRequestResponse cancel(Authentication auth, @PathVariable Long id) { return service.cancelMine(auth.getName(), id); }
 }

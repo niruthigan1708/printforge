@@ -34,4 +34,7 @@ public enum RequestStatus {
 
   /** A quote can be sent, or revised, until the customer has answered it. */
   public boolean canBeQuoted() { return this == SUBMITTED || this == UNDER_REVIEW || this == QUOTED; }
+
+  /** Customers may withdraw a request until it is quoted; after that they accept or reject the quote. */
+  public boolean customerCanCancel() { return this == SUBMITTED || this == UNDER_REVIEW; }
 }
