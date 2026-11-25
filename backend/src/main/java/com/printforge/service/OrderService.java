@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.UUID;
 
 @Service @RequiredArgsConstructor
 public class OrderService {
@@ -22,7 +23,9 @@ public class OrderService {
 
   @Transactional public OrderResponse create(String email, CreateOrderRequest request) {
     User customer = users.findByEmailIgnoreCase(email).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
-    Order order = new Order(); order.setCustomer(customer); order.setOrderNumber("PF-" + (1001 + orders.count()));
+    Order order = new Order(); order.setCustomer(customer);
+    // Temporary unique value; replaced with the id-based number once the row has an id.
+    order.setOrderNumber("PF-PENDING-" + UUID.randomUUID());
     BigDecimal subtotal = BigDecimal.ZERO;
     // Merge repeated lines for the same product, then lock products in ascending id order:
     // the row locks stop concurrent orders from overselling, and a fixed lock order stops
@@ -38,8 +41,18 @@ public class OrderService {
       OrderItem item = new OrderItem(); item.setOrder(order); item.setProduct(product); item.setProductName(product.getName()); item.setQuantity(quantity); item.setUnitPrice(product.getPrice()); item.setSubtotal(product.getPrice().multiply(BigDecimal.valueOf(quantity))); order.getItems().add(item); subtotal = subtotal.add(item.getSubtotal());
     }
     order.setSubtotal(subtotal); order.setDeliveryFee(BigDecimal.valueOf(350)); order.setTotalAmount(subtotal.add(order.getDeliveryFee())); order.setShippingName(request.shippingName()); order.setShippingPhone(request.shippingPhone()); order.setShippingAddress(request.shippingAddress()); order.setShippingCity(request.shippingCity()); order.setShippingPostalCode(request.shippingPostalCode());
-    return OrderResponse.from(orders.save(order));
+    order = orders.saveAndFlush(order);
+    order.setOrderNumber(orderNumberFor(order.getId()));
+    return OrderResponse.from(order);
   }
+
+  /**
+   * Order numbers derive from the database-generated id, so concurrent orders can never collide.
+   * (The old scheme, 1001 + count(), handed two simultaneous orders the same number.) Because
+   * count() never exceeded id - 1, numbers issued under the old scheme are always lower than
+   * any new one, so existing orders cannot clash either.
+   */
+  static String orderNumberFor(long id) { return "PF-" + (1000 + id); }
   @Transactional(readOnly = true)
   public List<OrderResponse> mine(String email) { User user = users.findByEmailIgnoreCase(email).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found")); return orders.findByCustomerOrderByCreatedAtDesc(user).stream().map(OrderResponse::from).toList(); }
 
