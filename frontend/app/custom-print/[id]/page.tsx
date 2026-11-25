@@ -25,7 +25,8 @@ function CustomPrintDetail() {
 
   useEffect(load, [params.id])
 
-  async function respond(action: 'accept' | 'reject') {
+  async function respond(action: 'accept' | 'reject' | 'cancel') {
+    if (action === 'cancel' && !confirm('Withdraw this custom print request? This cannot be undone.')) return
     setBusy(true)
     setActionError('')
     try {
@@ -193,6 +194,16 @@ function CustomPrintDetail() {
               <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>
                 Your 3D model is in the review queue. Our engineer is slicing the mesh and calculating tolerances.
               </span>
+            </div>
+          )}
+
+          {/* Allowed by the server until a quote is sent; after that the customer declines instead. */}
+          {request.canCancel && (
+            <div style={{ marginTop: 16 }}>
+              <button className="btn secondary" disabled={busy} onClick={() => respond('cancel')}>
+                <XCircle size={16} /> Withdraw Request
+              </button>
+              {actionError && <div className="alert alert-error" style={{ marginTop: 12 }}>{actionError}</div>}
             </div>
           )}
         </div>
