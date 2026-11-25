@@ -24,6 +24,17 @@ spring:
     baseline-version: 1
 server:
   port: 8080
+  # Behind a reverse proxy / load balancer, take the client IP (and scheme) from X-Forwarded-*
+  # headers, so per-IP login throttling applies to real clients rather than to the proxy. Tomcat
+  # only honours those headers when the request comes from a trusted proxy address, so a client
+  # connecting directly cannot spoof its IP. Set FORWARD_HEADERS_STRATEGY=none if nothing sits in
+  # front of the app.
+  forward-headers-strategy: ${FORWARD_HEADERS_STRATEGY:native}
+  tomcat:
+    remoteip:
+      # Proxies whose X-Forwarded-For is trusted (CIDR list). Defaults to private and loopback
+      # ranges; set TRUSTED_PROXIES if your load balancer uses public addresses.
+      internal-proxies: ${TRUSTED_PROXIES:10.0.0.0/8, 192.168.0.0/16, 169.254.0.0/16, 100.64.0.0/10, fc00::/7, 172.16.0.0/12, ::1/128, 127.0.0.0/8, fe80::/10}
 spring.servlet.multipart:
   max-file-size: 20MB
   max-request-size: 22MB
