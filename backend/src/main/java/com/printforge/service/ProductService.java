@@ -44,16 +44,39 @@ public class ProductService {
     Category category = categories.findById(request.categoryId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Category not found"));
     Product product = new Product();
     apply(product, request, category);
+    product.setStockQuantity(request.stockQuantity());
     return ProductResponse.from(products.save(product));
   }
 
   @Transactional
   public ProductResponse update(Long id, ProductRequest request) {
-    Product product = products.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
+    // Same row lock checkout takes, so an order cannot change the stock between the check below
+    // and the save.
+    Product product = products.findByIdForUpdate(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
     Category category = categories.findById(request.categoryId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Category not found"));
+    applyStock(product, request);
     apply(product, request, category);
     product.setUpdatedAt(Instant.now());
     return ProductResponse.from(product);
+  }
+
+  /**
+   * Saving the edit form used to write back whatever stock number the form was opened with,
+   * silently undoing any sales or cancellations that happened while it was open.
+   */
+  private void applyStock(Product product, ProductRequest request) {
+    Integer expected = request.expectedStockQuantity();
+    int current = product.getStockQuantity();
+    if (expected == null) {                          // no baseline sent: explicit overwrite
+      product.setStockQuantity(request.stockQuantity());
+      return;
+    }
+    if (request.stockQuantity() == expected) return; // stock field untouched: keep the live value
+    if (current != expected) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "Stock changed from " + expected + " to " + current
+        + " while you were editing (orders were placed or cancelled). Review the current stock and save again.");
+    }
+    product.setStockQuantity(request.stockQuantity());
   }
 
   @Transactional
@@ -75,7 +98,6 @@ public class ProductService {
     product.setName(request.name());
     product.setDescription(request.description());
     product.setPrice(request.price());
-    product.setStockQuantity(request.stockQuantity());
     product.setMaterial(request.material());
     product.setColor(request.color());
     product.setImageUrl(request.imageUrl());
