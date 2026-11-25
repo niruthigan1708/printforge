@@ -16,4 +16,9 @@ public class User {
   @NotBlank private String password;
   @Enumerated(EnumType.STRING) @Column(nullable = false) private Role role = Role.CUSTOMER;
   private Instant createdAt = Instant.now();
+  /**
+   * Embedded in every token this user is issued; a token whose version no longer matches is
+   * rejected. Bumping it (on logout) revokes all of the user's outstanding tokens at once.
+   */
+  @Column(name = "token_version", nullable = false) private int tokenVersion;
 }
