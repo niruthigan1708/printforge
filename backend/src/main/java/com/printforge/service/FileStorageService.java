@@ -7,9 +7,11 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -44,8 +46,22 @@ public class FileStorageService {
     return new StoredFile(originalName, destination.toString(), extension);
   }
 
-  public Path resolve(String storedPath) {
-    return Path.of(storedPath);
+  /**
+   * Finds a stored upload on disk, or empty if it is gone. Requests store the absolute path at
+   * upload time, which breaks when the upload directory moves (a changed UPLOAD_DIR, a moved
+   * project folder), so fall back to the same file name inside the current upload directory.
+   */
+  public Optional<Path> locate(String storedPath) {
+    if (storedPath == null || storedPath.isBlank()) return Optional.empty();
+    try {
+      Path recorded = Path.of(storedPath);
+      if (Files.isRegularFile(recorded) && Files.isReadable(recorded)) return Optional.of(recorded);
+      Path relocated = root.resolve(recorded.getFileName().toString()).normalize();
+      if (relocated.startsWith(root) && Files.isRegularFile(relocated) && Files.isReadable(relocated)) return Optional.of(relocated);
+    } catch (InvalidPathException e) {
+      // a path recorded on another OS: treat as missing
+    }
+    return Optional.empty();
   }
 
   private static final int MAX_DISPLAY_NAME = 200;
