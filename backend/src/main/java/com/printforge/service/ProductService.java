@@ -71,8 +71,14 @@ public class ProductService {
     // and the save.
     Product product = products.findByIdForUpdate(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
     Category category = categories.findById(request.categoryId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Category not found"));
+    // Another admin saved (or archived) this product after this editor loaded it: refuse rather
+    // than silently overwrite their changes with the stale form.
+    if (request.expectedEditVersion() != null && request.expectedEditVersion() != product.getEditVersion()) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "This product was changed by someone else while you were editing. Reload it to see their changes, then save again.");
+    }
     applyStock(product, request);
     apply(product, request, category);
+    product.setEditVersion(product.getEditVersion() + 1);
     product.setUpdatedAt(Instant.now());
     return ProductResponse.from(product);
   }
@@ -111,6 +117,8 @@ public class ProductService {
       // Order items reference the product, so a hard delete would violate the foreign key.
       // Archive it instead: hidden from the shop, kept for order history.
       product.setActive(false);
+      // An open edit form would otherwise re-activate it on save.
+      product.setEditVersion(product.getEditVersion() + 1);
       product.setUpdatedAt(Instant.now());
       return ProductDeleteResponse.archivedInstead();
     }

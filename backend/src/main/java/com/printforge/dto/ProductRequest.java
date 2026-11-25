@@ -10,6 +10,9 @@ import static com.printforge.dto.FieldLimits.*;
  *   the server protects sales made while the form was open: an unchanged stock field keeps the
  *   current stock, and an edited one is rejected (409) if stock moved in the meantime. When
  *   omitted, {@code stockQuantity} overwrites the stock unconditionally. Ignored on create.
+ * @param expectedEditVersion on update, the product's {@code editVersion} when the editor loaded it;
+ *   if another admin has saved or archived the product since, the update is rejected (409).
+ *   Omitted: no check. Ignored on create.
  */
 public record ProductRequest(
   @NotBlank @Size(max = PRODUCT_NAME) String name,
@@ -22,4 +25,5 @@ public record ProductRequest(
   @Size(max = URL) String imageUrl,
   @NotNull Long categoryId,
   Boolean active,
-  @Min(0) Integer expectedStockQuantity) { }
+  @Min(0) Integer expectedStockQuantity,
+  @Min(0) Long expectedEditVersion) { }
