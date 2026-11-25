@@ -71,16 +71,23 @@ export default function AdminCustomPrintDetailPage() {
       const res = await fetch(`${API_URL}/admin/custom-prints/${request.id}/file`, {
         headers: { Authorization: `Bearer ${getToken()}` },
       })
-      if (!res.ok) throw new Error('download failed')
+      if (!res.ok) {
+        // Surface the server's reason (e.g. the file is no longer on the server).
+        const body = await res.json().catch(() => null)
+        throw new Error(body?.message || 'Could not download the 3D file.')
+      }
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
       link.download = request.fileName
+      document.body.appendChild(link)
       link.click()
-      URL.revokeObjectURL(url)
-    } catch {
-      setError('Could not download the 3D file.')
+      link.remove()
+      // Revoking synchronously can cancel the download in some browsers; give it a moment.
+      setTimeout(() => URL.revokeObjectURL(url), 10_000)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not download the 3D file.')
     } finally {
       setDownloading(false)
     }
