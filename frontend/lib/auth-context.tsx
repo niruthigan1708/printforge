@@ -81,7 +81,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     persist(auth)
   }, [persist])
 
-  const logout = clearSession
+  const logout = useCallback(() => {
+    // Revoke the token server-side (all of this user's sessions), not just forget it locally.
+    // The request reads the token before clearSession runs; failures don't block logging out.
+    api.post('/auth/logout').catch(() => {})
+    clearSession()
+  }, [clearSession])
 
   return <AuthContext.Provider value={{ user, loading, login, register, logout }}>{children}</AuthContext.Provider>
 }
