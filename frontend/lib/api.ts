@@ -1,52 +1,88 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
-const TOKEN_KEY = 'printforge-token'
+
+/**
+ * The signed-in user's public details (never the token: the session lives in an httpOnly cookie
+ * page scripts cannot read). Its presence means "we believe we are signed in", which is how a
+ * 401 is recognised as an expired session rather than a plain wrong password.
+ */
+export const SESSION_USER_KEY = 'printforge-user'
+/** Where older versions kept the token in localStorage; removed on load. */
+export const LEGACY_TOKEN_KEY = 'printforge-token'
 
 export class ApiError extends Error {
   status: number
   errors?: Record<string, string>
-  constructor(message: string, status: number, errors?: Record<string, string>) {
+  code?: string
+  constructor(message: string, status: number, errors?: Record<string, string>, code?: string) {
     super(message)
     this.status = status
     this.errors = errors
+    this.code = code
   }
 }
 
-/** Fired on window when the server rejects our token; the auth context logs the user out. */
+/** Fired on window when the server rejects our session; the auth context logs the user out. */
 export const SESSION_EXPIRED_EVENT = 'printforge:session-expired'
 
-export function getToken(): string | null {
-  if (typeof window === 'undefined') return null
-  return localStorage.getItem(TOKEN_KEY)
+const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
+
+function believesSignedIn(): boolean {
+  return typeof window !== 'undefined' && localStorage.getItem(SESSION_USER_KEY) !== null
 }
 
-/** True if the JWT's `exp` claim is in the past (or the token cannot be read). */
-export function isTokenExpired(token: string): boolean {
+/**
+ * CSRF token for state-changing requests. The API keeps it in an httpOnly cookie and hands the
+ * matching value out from /auth/csrf; requests echo it in a header, which another site cannot do.
+ */
+let csrf: Promise<{ headerName: string; token: string }> | null = null
+
+function csrfToken(): Promise<{ headerName: string; token: string }> {
+  if (!csrf) {
+    csrf = fetch(`${API_URL}/auth/csrf`, { credentials: 'include' })
+      .then(res => (res.ok ? res.json() : Promise.reject(new Error(`csrf ${res.status}`))))
+      .catch(err => { csrf = null; throw err })
+  }
+  return csrf
+}
+
+/** Drops the cached CSRF token (it is tied to the session, so it changes when the session does). */
+export function resetCsrfToken() { csrf = null }
+
+async function send(path: string, options: RequestInit): Promise<Response> {
+  const method = (options.method || 'GET').toUpperCase()
+  const headers = new Headers(options.headers)
+  if (options.body && !(options.body instanceof FormData)) headers.set('Content-Type', 'application/json')
+  if (!SAFE_METHODS.has(method)) {
+    try {
+      const { headerName, token } = await csrfToken()
+      headers.set(headerName, token)
+    } catch {
+      throw new ApiError('Could not reach the PrintForge server. Please try again.', 0)
+    }
+  }
   try {
-    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')))
-    return typeof payload.exp !== 'number' || payload.exp * 1000 <= Date.now()
+    return await fetch(`${API_URL}${path}`, { ...options, headers, credentials: 'include' })
   } catch {
-    return true
+    throw new ApiError('Could not reach the PrintForge server. Please try again.', 0)
   }
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const token = getToken()
-  const headers = new Headers(options.headers)
-  const isForm = options.body instanceof FormData
-  if (!isForm && options.body) headers.set('Content-Type', 'application/json')
-  if (token) headers.set('Authorization', `Bearer ${token}`)
+  let res = await send(path, options)
 
-  let res: Response
-  try {
-    res = await fetch(`${API_URL}${path}`, { ...options, headers })
-  } catch {
-    throw new ApiError('Could not reach the PrintForge server. Please try again.', 0)
+  // The CSRF token went stale (e.g. the session changed in another tab): fetch a new one, retry once.
+  if (res.status === 403 && !SAFE_METHODS.has((options.method || 'GET').toUpperCase())) {
+    const body = parseJson(await res.clone().text())
+    if (isRecord(body) && body.code === 'CSRF') {
+      resetCsrfToken()
+      res = await send(path, options)
+    }
   }
 
-  // A 401 on a request that carried a token means the session is no longer valid (expired,
-  // revoked, or signed with a rotated secret). Login/register 401s are just wrong credentials.
-  // Checked before reading the body, which may not even be JSON.
-  if (res.status === 401 && token && !path.startsWith('/auth/')) {
+  // A 401 while we believe we are signed in means the session is no longer valid (expired,
+  // revoked by a logout elsewhere, or signed with a rotated secret). Login/register 401s are just
+  // wrong credentials. Checked before reading the body, which may not even be JSON.
+  if (res.status === 401 && believesSignedIn() && !path.startsWith('/auth/')) {
     window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT))
     throw new ApiError('Your session has expired. Please log in again.', 401)
   }
@@ -62,7 +98,8 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
         ? 'The PrintForge server is temporarily unavailable. Please try again shortly.'
         : 'Something went wrong. Please try again.')
     const errors = isRecord(data) && isRecord(data.errors) ? data.errors as Record<string, string> : undefined
-    throw new ApiError(message, res.status, errors)
+    const code = isRecord(data) && typeof data.code === 'string' ? data.code : undefined
+    throw new ApiError(message, res.status, errors, code)
   }
   if (text && data === undefined) {
     throw new ApiError('The server sent an unexpected response. Please try again.', res.status)
@@ -90,6 +127,19 @@ export const api = {
   put: <T,>(path: string, body?: unknown) => request<T>(path, { method: 'PUT', body: body !== undefined ? JSON.stringify(body) : undefined }),
   del: <T,>(path: string) => request<T>(path, { method: 'DELETE' }),
   postForm: <T,>(path: string, form: FormData) => request<T>(path, { method: 'POST', body: form }),
+  /** A raw response (e.g. a file download), sent with the session cookie. Errors as for JSON calls. */
+  download: async (path: string): Promise<Blob> => {
+    const res = await send(path, { method: 'GET' })
+    if (res.status === 401 && believesSignedIn()) {
+      window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT))
+      throw new ApiError('Your session has expired. Please log in again.', 401)
+    }
+    if (!res.ok) {
+      const data = parseJson(await res.text())
+      throw new ApiError(isRecord(data) && typeof data.message === 'string' ? data.message : 'Could not download the file.', res.status)
+    }
+    return res.blob()
+  },
 }
 
 /**
@@ -99,4 +149,4 @@ export const api = {
 export const productImageUrl = (productId: number, version?: string | null) =>
   `${API_URL}/products/${productId}/image${version ? `?v=${encodeURIComponent(version)}` : ''}`
 
-export { API_URL, TOKEN_KEY }
+export { API_URL }
