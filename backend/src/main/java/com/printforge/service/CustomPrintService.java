@@ -97,6 +97,28 @@ public class CustomPrintService {
     return CustomPrintRequestResponse.from(request);
   }
 
+  /**
+   * Statuses whose model file is no longer needed once the retention period has passed. COMPLETED
+   * is deliberately excluded: the studio offers free reprints, which need the original model.
+   */
+  static final Set<RequestStatus> PURGEABLE = Set.of(RequestStatus.REJECTED, RequestStatus.CANCELLED);
+
+  /**
+   * Deletes the model files of rejected or cancelled requests closed before {@code cutoff} and
+   * records when, so the request itself (and its history) is kept. Returns how many were purged.
+   */
+  @Transactional
+  public int purgeClosedRequestFiles(Instant cutoff) {
+    int purged = 0;
+    for (CustomPrintRequest request : requests.findByStatusInAndUpdatedAtBeforeAndFilePurgedAtIsNull(PURGEABLE, cutoff)) {
+      if (fileStorage.delete(request.getFilePath())) {
+        request.setFilePurgedAt(Instant.now()); // updatedAt is left alone: the request itself did not change
+        purged++;
+      }
+    }
+    return purged;
+  }
+
   /** A customer withdrawing their own request before it has been quoted. */
   @Transactional
   public CustomPrintRequestResponse cancelMine(String email, Long id) {

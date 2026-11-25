@@ -50,6 +50,10 @@ app:
   delivery-fee: ${DELIVERY_FEE:350}
   # Orders with a subtotal at or above this get free delivery. Set to 0 to switch it off.
   free-delivery-threshold: ${FREE_DELIVERY_THRESHOLD:5000}
+  uploads:
+    # Model files of rejected or cancelled custom print requests are deleted this many days after
+    # the request closed (completed requests keep theirs for reprints). 0 keeps them forever.
+    closed-request-retention-days: ${CLOSED_UPLOAD_RETENTION_DAYS:30}
   # Login throttling: failures allowed per account / per IP within the window before lockout.
   auth:
     max-failed-logins-per-account: ${MAX_FAILED_LOGINS_PER_ACCOUNT:5}
