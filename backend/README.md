@@ -1,6 +1,6 @@
 # PrintForge API
 
-Spring Boot 3 / Java 21 REST API for PrintForge — authentication, product/category catalogue, orders, and the custom 3D-print workflow.
+Spring Boot 4.1 / Java 21 REST API for PrintForge — authentication, product/category catalogue, orders, and the custom 3D-print workflow.
 
 See the [root README](../README.md) for the full API reference, database design, and setup instructions. Quick start:
 

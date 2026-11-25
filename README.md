@@ -41,7 +41,7 @@ Captured from a local run with the seeded demo data (demo accounts, generated pl
 
 ## Tech Stack
 
-**Backend:** Java 21, Spring Boot 3, Spring Web, Spring Data JPA, Spring Security (JWT), Bean Validation, Lombok, Maven
+**Backend:** Java 21, Spring Boot 4.1, Spring Web MVC, Spring Data JPA, Spring Security (JWT), Bean Validation, Flyway, Lombok, Maven
 **Database:** PostgreSQL
 **Frontend:** Next.js 16 (App Router), React 19, TypeScript, hand-rolled CSS design system (no UI framework)
 **Testing:** JUnit 5, Spring Boot Test, MockMvc, H2 (in-memory, test-only)
