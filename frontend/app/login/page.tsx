@@ -102,6 +102,9 @@ function LoginPageInner() {
                 onChange={e => setPassword(e.target.value)}
               />
             </label>
+            <Link href="/forgot-password" style={{ alignSelf: 'flex-end', fontSize: 13, color: 'var(--accent-primary)', fontWeight: 600, marginTop: -8 }}>
+              Forgot password?
+            </Link>
 
             <button
               className="btn btn-primary"

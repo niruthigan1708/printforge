@@ -54,12 +54,12 @@ export function Header() {
 
             {user ? (
               <div className="account-menu">
-                <div className="user-pill">
+                <Link href="/account" className="user-pill" title="Account settings">
                   <span className="user-avatar">
                     {user.role === 'ADMIN' ? <ShieldAlert size={12} /> : user.name.charAt(0).toUpperCase()}
                   </span>
                   <span>{user.name.split(' ')[0]}</span>
-                </div>
+                </Link>
                 <button className="icon-btn" onClick={logout} title="Log out">
                   <LogOut size={16} />
                 </button>
@@ -121,10 +121,10 @@ export function Header() {
           <div style={{ marginTop: 'auto', paddingTop: 20, borderTop: '1px solid var(--border-subtle)' }}>
             {user ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <div className="user-pill" style={{ justifyContent: 'center' }}>
+                <Link href="/account" className="user-pill" style={{ justifyContent: 'center' }} onClick={() => setMobileMenuOpen(false)}>
                   <UserIcon size={14} />
                   <span>{user.name} ({user.role})</span>
-                </div>
+                </Link>
                 <button
                   className="btn secondary"
                   style={{ width: '100%' }}
