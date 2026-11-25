@@ -56,6 +56,8 @@ The backend never exposes JPA entities over HTTP — every endpoint returns a DT
 
 Relationships: one customer → many orders and many custom print requests; one order → many order items; one category → many products.
 
+**Schema migrations:** the schema is owned by [Flyway](https://flywaydb.org/) migrations in `backend/src/main/resources/db/migration` and applied automatically on startup; Hibernate only validates that the entities match (`ddl-auto: validate`). To change the schema, add a new `V<n>__description.sql` file — never edit one that has already run. Databases created before Flyway was adopted are baselined at version 1 on first start and then receive later migrations. The test suite runs the same migrations on H2, so a migration that drifts from the entities fails the build.
+
 **Order status:** `PENDING → CONFIRMED → PRINTING → READY → SHIPPED → DELIVERED`, or `CANCELLED`. Orders only move forward (steps may be skipped) and can be cancelled until they ship; cancelling returns the items to stock. `DELIVERED` and `CANCELLED` are final.
 
 **Custom print status:** `SUBMITTED → UNDER_REVIEW → QUOTED → ACCEPTED → IN_PRODUCTION → COMPLETED`, or `REJECTED` / `CANCELLED`. `QUOTED` is reached only by sending a quote (which can be revised until the customer answers); `ACCEPTED` / `REJECTED` are set only by the customer; admins drive the remaining steps and can cancel until completion. `REJECTED`, `COMPLETED` and `CANCELLED` are final.
