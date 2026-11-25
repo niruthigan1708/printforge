@@ -26,10 +26,11 @@ public class ProductController {
   private final ProductImageService productImages;
 
   @GetMapping public List<ProductResponse> list(@RequestParam(required = false) String search, @RequestParam(required = false) String category) { return service.find(search, category); }
-  @GetMapping("/{id}") public ProductResponse get(@PathVariable Long id) { return service.findById(id); }
+  @GetMapping("/{id}") public ProductResponse get(@PathVariable Long id) { return service.findActiveById(id); }
 
   @GetMapping("/{id}/image")
   public ResponseEntity<?> image(@PathVariable Long id) {
+    // Photos stay available for archived products: carts and past orders still show them.
     ProductResponse product = service.findById(id);
     var stored = productImages.find(id);
     if (stored.isPresent()) {

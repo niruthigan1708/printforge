@@ -35,6 +35,12 @@ public class ProductService {
     return result.stream().map(ProductResponse::from).toList();
   }
 
+  /** Public lookup: archived/inactive products are hidden, exactly as in the catalogue listing. */
+  public ProductResponse findActiveById(Long id) {
+    return products.findById(id).filter(Product::isActive).map(ProductResponse::from).orElseThrow(() -> new EntityNotFoundException("Product not found"));
+  }
+
+  /** Admin lookup: includes inactive products so they can still be edited or reactivated. */
   public ProductResponse findById(Long id) { return ProductResponse.from(products.findById(id).orElseThrow(() -> new EntityNotFoundException("Product not found"))); }
 
   public List<ProductResponse> findAllForAdmin() { return products.findAllByOrderByCreatedAtDesc().stream().map(ProductResponse::from).toList(); }
