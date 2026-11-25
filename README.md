@@ -84,14 +84,20 @@ Order and request responses include `nextStatuses` — the moves the server will
 
 ## Authentication
 
-JWT bearer tokens, BCrypt password hashing. Public registration always creates a `CUSTOMER` — there is no way to self-register as `ADMIN`. A token only identifies the user: on every request the server re-reads the account and takes the role from the database (never from the token or the client), so a role change applies immediately and a deleted account stops working. Each token carries the user's token version; logging out (`POST /api/auth/logout`) bumps it, revoking all of that user's tokens on every device. Invalid, expired, revoked or missing tokens return `401`; valid tokens without the right role return `403`.
+JWT sessions, BCrypt password hashing. Public registration always creates a `CUSTOMER` — there is no way to self-register as `ADMIN`.
+
+**Browser sessions** live in an **httpOnly cookie** (`pf_session`: HttpOnly, SameSite=Lax, Path=/api, Secure whenever the request arrives over HTTPS), so page scripts — including any injected by an XSS bug — can never read the token; the frontend stores only the user's public details. Because the browser attaches the cookie automatically, every state-changing request authenticated by it must also carry a **CSRF token** (double-submit: the frontend reads it from `GET /api/auth/csrf` and sends it in the `X-XSRF-TOKEN` header; a stale token gets `403` with `"code":"CSRF"` and is refreshed automatically). Non-browser clients can still send `Authorization: Bearer <token>` instead, which needs no CSRF token. The cookie is sent cross-origin to the API, so the frontend and API must be on the same site (e.g. `localhost`, or `shop.example.com` + `api.example.com`) and the frontend's origin must be listed in `CORS_ALLOWED_ORIGINS`.
+
+A token only identifies the user: on every request the server re-reads the account and takes the role from the database (never from the token or the client), so a role change applies immediately and a deleted account stops working. Each token carries the user's token version; logging out (`POST /api/auth/logout`) bumps it and clears the cookie, revoking all of that user's sessions on every device. Invalid, expired, revoked or missing tokens return `401`; valid tokens without the right role return `403`.
 
 ## API Endpoints
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| POST | `/api/auth/register` | Public | Register (always `CUSTOMER`) |
-| POST | `/api/auth/login` | Public | Log in, returns `{token, id, name, email, role}` |
+| POST | `/api/auth/register` | Public | Register (always `CUSTOMER`); sets the session cookie, returns `{id, name, email, role}` |
+| POST | `/api/auth/login` | Public | Log in; sets the httpOnly session cookie, returns `{id, name, email, role}` (never the token) |
+| GET | `/api/auth/me` | Authenticated | The signed-in user (used to restore a browser session) |
+| GET | `/api/auth/csrf` | Public | `{headerName, token}` to echo on cookie-authenticated writes |
 | POST | `/api/auth/logout` | Authenticated | Revoke all of the caller's tokens (every device); `204` |
 | GET | `/api/products` | Public | List active products (`?search=` and `?category=` combine; `?ids=1,2,3` returns just those, max 100) |
 | GET | `/api/products/{id}` | Public | Product detail (404 for inactive/archived products) |
