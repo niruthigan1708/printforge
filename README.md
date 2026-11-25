@@ -64,6 +64,8 @@ Order and request responses include `nextStatuses` — the moves the server will
 
 **Order and request numbers** (`PF-…`, `CR-…`) are derived from the database id, so they stay unique when orders are placed concurrently. Stock is decremented under a row lock, so simultaneous orders cannot oversell.
 
+**Editing stock safely:** `PUT /api/products/{id}` accepts an optional `expectedStockQuantity` — the stock value the editor was loaded with. If the submitted `stockQuantity` equals it, the live stock is kept (so sales made while the form was open are not undone); if it differs and the stock has moved in the meantime, the update is rejected with `409` and the current value. The admin form always sends it; without it, `stockQuantity` overwrites the stock.
+
 ## Authentication
 
 JWT bearer tokens, BCrypt password hashing. Public registration always creates a `CUSTOMER` — there is no way to self-register as `ADMIN`. Every protected endpoint checks the role embedded in the verified JWT server-side (Spring Security), never a role sent by the client. Invalid/expired/missing tokens return `401`; valid tokens without the right role return `403`.
