@@ -136,7 +136,7 @@ echo "NEXT_PUBLIC_API_URL=http://localhost:8080/api" > .env.local
 npm run dev                # http://localhost:3000
 ```
 
-Demo data (8 categories, 15 products, 1 admin, 1 customer) seeds automatically on first boot against an empty database.
+Demo data (8 categories, 15 products, 1 admin, 1 customer) is created on first boot against an empty database **only when `SEED_DEMO_DATA=true`** — the `.env.example` you copied sets it for local development. It is off by default; never enable it in a real deployment.
 
 **Run backend tests:** `cd backend && mvn test` (uses an in-memory H2 database, no PostgreSQL required).
 
@@ -154,6 +154,7 @@ See [`.env.example`](.env.example). The backend loads `backend/.env` automatical
 |---|---|---|
 | `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD` | backend | PostgreSQL connection |
 | `JWT_SECRET` | backend | **Required.** HMAC signing key for JWTs — a long random value (≥32 bytes). The backend refuses to start if it is missing, too short, or left as the `.env.example` placeholder |
+| `SEED_DEMO_DATA` | backend | `true` to create the demo accounts and products on first boot against an empty database (default off; local development only) |
 | `JWT_EXPIRATION` | backend | Token lifetime in ms (default 24h) |
 | `UPLOAD_DIR` | backend | Where custom-print uploads are stored (default `backend/uploads/custom-prints`) |
 | `PRODUCT_IMAGE_DIR` | backend | Where uploaded product photos are stored (default `backend/uploads/products`) |
@@ -170,7 +171,7 @@ See [`.env.example`](.env.example). The backend loads `backend/.env` automatical
 | Admin | `admin@printforge.com` | `Admin@12345` |
 | Customer | `customer@printforge.com` | `Customer@12345` |
 
-Seeded by `DataSeeder` on first boot (only when the `users` table is empty); disable with `app.seed.enabled=false`.
+Created by `DataSeeder` on first boot when `SEED_DEMO_DATA=true` (off by default) and only if the `users` table is empty, so the demo accounts can never be added to a database that has real users. Because these passwords are public, never enable demo seeding in a real deployment.
 
 ## Future Improvements
 
