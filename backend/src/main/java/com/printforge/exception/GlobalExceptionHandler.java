@@ -1,6 +1,7 @@
 package com.printforge.exception;
 
 import com.printforge.dto.ErrorResponse;
+import com.printforge.security.LoginAttemptService;
 import org.springframework.dao.DataIntegrityViolationException;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
@@ -29,6 +30,13 @@ public class GlobalExceptionHandler {
     HttpStatus status = HttpStatus.resolve(ex.getStatusCode().value());
     if (status == null) status = HttpStatus.INTERNAL_SERVER_ERROR;
     return ResponseEntity.status(status).body(new ErrorResponse(ex.getReason(), status.value()));
+  }
+
+  @ExceptionHandler(LoginAttemptService.TooManyAttemptsException.class)
+  public ResponseEntity<ErrorResponse> handleTooManyAttempts(LoginAttemptService.TooManyAttemptsException ex) {
+    return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+      .header("Retry-After", Long.toString(ex.retryAfterSeconds()))
+      .body(new ErrorResponse(ex.getMessage(), HttpStatus.TOO_MANY_REQUESTS.value()));
   }
 
   @ExceptionHandler(EntityNotFoundException.class)
