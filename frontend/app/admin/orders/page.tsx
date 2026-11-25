@@ -6,7 +6,6 @@ import { StatusBadge } from '../../../components/StatusBadge'
 import { api, ApiError } from '../../../lib/api'
 import { money, type Order, type OrderStatus } from '../../../lib/types'
 
-const STATUSES: OrderStatus[] = ['PENDING', 'CONFIRMED', 'PRINTING', 'READY', 'SHIPPED', 'DELIVERED', 'CANCELLED']
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([])
@@ -26,6 +25,11 @@ export default function AdminOrdersPage() {
   useEffect(load, [])
 
   async function updateStatus(order: Order, status: OrderStatus) {
+    // Orders only move forward, so a mistaken change cannot be reverted.
+    const prompt = status === 'CANCELLED'
+      ? `Cancel order ${order.orderNumber}? Its items will be returned to stock. This cannot be undone.`
+      : `Move order ${order.orderNumber} to ${status}? Orders cannot be moved back to an earlier status.`
+    if (!confirm(prompt)) return
     setUpdatingId(order.id)
     setError('')
     try {
@@ -101,11 +105,12 @@ export default function AdminOrdersPage() {
                     <select
                       className="status-select"
                       value={order.status}
-                      disabled={updatingId === order.id || order.status === 'DELIVERED' || order.status === 'CANCELLED'}
+                      disabled={updatingId === order.id || order.nextStatuses.length === 0}
                       onChange={e => updateStatus(order, e.target.value as OrderStatus)}
                       style={{ minWidth: 140, padding: '8px 12px' }}
                     >
-                      {STATUSES.map(status => (
+                      {/* Only the current status plus the moves the server allows. */}
+                      {[order.status, ...order.nextStatuses].map(status => (
                         <option key={status} value={status}>
                           {status}
                         </option>

@@ -40,6 +40,8 @@ export type Order = {
   customerName: string
   customerEmail: string
   items: OrderItem[]
+  /** Statuses the server will accept as the next move for this order. */
+  nextStatuses: OrderStatus[]
 }
 
 export type CustomPrintRequest = {
@@ -58,6 +60,10 @@ export type CustomPrintRequest = {
   updatedAt: string
   customerName: string
   customerEmail: string
+  /** Statuses an admin may set directly via the status endpoint (never QUOTED/ACCEPTED/REJECTED). */
+  nextStatuses: RequestStatus[]
+  /** Whether a quote can still be sent or revised (only until the customer answers). */
+  canQuote: boolean
 }
 
 export type DashboardSummary = {
