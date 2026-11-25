@@ -7,7 +7,7 @@ import com.printforge.repository.ProductRepository;
 import com.printforge.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.springframework.security.crypto.password.NoOpPasswordEncoder;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 import java.lang.reflect.Field;
 import java.util.List;
@@ -23,7 +23,7 @@ class DataSeederTest {
   private final ProductRepository products = mock(ProductRepository.class);
 
   private DataSeeder seeder(boolean enabled) {
-    DataSeeder seeder = new DataSeeder(users, categories, products, NoOpPasswordEncoder.getInstance());
+    DataSeeder seeder = new DataSeeder(users, categories, products, new BCryptPasswordEncoder(4));
     ReflectionTestUtils.setField(seeder, "enabled", enabled);
     when(categories.count()).thenReturn(1L);
     when(products.count()).thenReturn(1L);
