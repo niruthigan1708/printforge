@@ -14,4 +14,6 @@ public class OrderController {
   @PostMapping public OrderResponse create(Authentication auth, @Valid @RequestBody CreateOrderRequest request) { return service.create(auth.getName(), request); }
   @GetMapping public List<OrderResponse> mine(Authentication auth) { return service.mine(auth.getName()); }
   @GetMapping("/{id}") public OrderResponse get(Authentication auth, @PathVariable Long id) { return service.getMine(auth.getName(), id); }
+  /** Customers can cancel their own order while it is still PENDING. */
+  @PutMapping("/{id}/cancel") public OrderResponse cancel(Authentication auth, @PathVariable Long id) { return service.cancelMine(auth.getName(), id); }
 }

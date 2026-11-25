@@ -26,4 +26,7 @@ public enum OrderStatus {
   }
 
   public boolean canTransitionTo(OrderStatus target) { return nextStatuses().contains(target); }
+
+  /** Customers may cancel on their own only before the studio has confirmed the order. */
+  public boolean customerCanCancel() { return this == PENDING; }
 }

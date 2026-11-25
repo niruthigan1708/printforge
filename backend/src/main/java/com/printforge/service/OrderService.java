@@ -68,6 +68,23 @@ public class OrderService {
   @Transactional(readOnly = true)
   public List<OrderResponse> all() { return orders.findAll().stream().sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt())).map(OrderResponse::from).toList(); }
 
+  /** A customer cancelling their own order; only allowed while it is still PENDING. */
+  @Transactional
+  public OrderResponse cancelMine(String email, Long id) {
+    // Same lock as the admin status change, so a cancel and a confirm cannot interleave.
+    Order order = orders.findByIdForUpdate(id)
+      .filter(candidate -> candidate.getCustomer().getEmail().equalsIgnoreCase(email))
+      .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
+    if (order.getStatus() == OrderStatus.CANCELLED) return OrderResponse.from(order);
+    if (!order.getStatus().customerCanCancel()) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "This order is already " + order.getStatus() + " and can no longer be cancelled online. Please contact us.");
+    }
+    restock(order);
+    order.setStatus(OrderStatus.CANCELLED);
+    order.setUpdatedAt(Instant.now());
+    return OrderResponse.from(order);
+  }
+
   @Transactional
   public OrderResponse updateStatus(Long id, OrderStatus status) {
     // Lock the order so two concurrent cancellations cannot both restock it.
