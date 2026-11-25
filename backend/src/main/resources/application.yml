@@ -35,6 +35,16 @@ server:
       # Proxies whose X-Forwarded-For is trusted (CIDR list). Defaults to private and loopback
       # ranges; set TRUSTED_PROXIES if your load balancer uses public addresses.
       internal-proxies: ${TRUSTED_PROXIES:10.0.0.0/8, 192.168.0.0/16, 169.254.0.0/16, 100.64.0.0/10, fc00::/7, 172.16.0.0/12, ::1/128, 127.0.0.0/8, fe80::/10}
+spring.mail:
+  # SMTP for password reset emails. Leave MAIL_HOST empty (local development) and reset links are
+  # written to the log instead.
+  host: ${MAIL_HOST:}
+  port: ${MAIL_PORT:587}
+  username: ${MAIL_USERNAME:}
+  password: ${MAIL_PASSWORD:}
+  properties:
+    mail.smtp.auth: ${MAIL_SMTP_AUTH:true}
+    mail.smtp.starttls.enable: ${MAIL_STARTTLS:true}
 spring.servlet.multipart:
   max-file-size: 20MB
   max-request-size: 22MB
@@ -54,6 +64,10 @@ app:
     # Model files of rejected or cancelled custom print requests are deleted this many days after
     # the request closed (completed requests keep theirs for reprints). 0 keeps them forever.
     closed-request-retention-days: ${CLOSED_UPLOAD_RETENTION_DAYS:30}
+  # Public address of the frontend, used to build links in emails (password reset).
+  frontend-url: ${FRONTEND_URL:http://localhost:3000}
+  mail:
+    from: ${MAIL_FROM:PrintForge <no-reply@printforge.local>}
   # Login throttling: failures allowed per account / per IP within the window before lockout.
   auth:
     max-failed-logins-per-account: ${MAX_FAILED_LOGINS_PER_ACCOUNT:5}

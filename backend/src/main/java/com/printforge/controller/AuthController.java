@@ -3,6 +3,7 @@ package com.printforge.controller;
 import com.printforge.dto.*;
 import com.printforge.security.SessionCookies;
 import com.printforge.service.AuthService;
+import com.printforge.service.PasswordResetService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -17,6 +18,7 @@ import java.util.Map;
 public class AuthController {
   private final AuthService service;
   private final SessionCookies sessionCookies;
+  private final PasswordResetService passwordReset;
 
   /** Registers a customer and signs them in: the session goes into an httpOnly cookie. */
   @PostMapping("/register")
@@ -39,6 +41,22 @@ public class AuthController {
    */
   @GetMapping("/csrf") public Map<String, String> csrf(CsrfToken token) {
     return Map.of("headerName", token.getHeaderName(), "token", token.getToken());
+  }
+
+  /**
+   * Emails a password reset link if the account exists. Always 202 with the same body, so the
+   * form cannot be used to find out who has an account.
+   */
+  @PostMapping("/forgot-password") @ResponseStatus(HttpStatus.ACCEPTED)
+  public Map<String, String> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request, HttpServletRequest http) {
+    passwordReset.requestReset(request.email(), http.getRemoteAddr());
+    return Map.of("message", "If an account exists for that email, we've sent a link to reset the password.");
+  }
+
+  /** Sets a new password from a reset link; signs the user out everywhere. */
+  @PostMapping("/reset-password") @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+    passwordReset.resetPassword(request.token(), request.password());
   }
 
   /** Ends every session of the caller: all tokens issued to them stop working, and the cookie is cleared. */
