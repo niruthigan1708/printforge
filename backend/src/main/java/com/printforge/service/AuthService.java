@@ -15,11 +15,14 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Service @RequiredArgsConstructor
 public class AuthService {
+  /** A freshly issued session: the token goes into the session cookie, the user into the response body. */
+  public record IssuedSession(String token, AuthResponse user) { }
+
   private final UserRepository users; private final PasswordEncoder encoder; private final JwtService jwt; private final LoginAttemptService loginAttempts;
-  public AuthResponse register(AuthRequest request) {
+  public IssuedSession register(AuthRequest request) {
     if (users.existsByEmailIgnoreCase(request.email())) throw new ResponseStatusException(HttpStatus.CONFLICT, "Email is already registered");
     User user = new User(); user.setName(request.name()); user.setEmail(request.email().toLowerCase()); user.setPassword(encoder.encode(request.password())); user.setRole(Role.CUSTOMER);
-    user = users.save(user); return AuthResponse.from(jwt.create(user), user);
+    user = users.save(user); return issue(user);
   }
   /** Revokes every token issued to this user (all devices), by bumping their token version. */
   @Transactional
@@ -27,7 +30,7 @@ public class AuthService {
     users.findByEmailIgnoreCase(email).ifPresent(user -> user.setTokenVersion(user.getTokenVersion() + 1));
   }
 
-  public AuthResponse login(LoginRequest request, String clientIp) {
+  public IssuedSession login(LoginRequest request, String clientIp) {
     // Checked before the password, so a locked-out guesser learns nothing from further tries.
     loginAttempts.checkAllowed(request.email(), clientIp);
     User user = users.findByEmailIgnoreCase(request.email()).orElse(null);
@@ -37,6 +40,13 @@ public class AuthService {
       throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password");
     }
     loginAttempts.recordSuccess(request.email());
-    return AuthResponse.from(jwt.create(user), user);
+    return issue(user);
   }
+
+  /** The signed-in user, for restoring a browser session from its cookie. */
+  public AuthResponse currentUser(String email) {
+    return users.findByEmailIgnoreCase(email).map(AuthResponse::from).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication is required"));
+  }
+
+  private IssuedSession issue(User user) { return new IssuedSession(jwt.create(user), AuthResponse.from(user)); }
 }
