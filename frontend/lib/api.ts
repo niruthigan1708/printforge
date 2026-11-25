@@ -43,22 +43,45 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     throw new ApiError('Could not reach the PrintForge server. Please try again.', 0)
   }
 
-  if (res.status === 204) return undefined as T
-  const text = await res.text()
-  const data = text ? JSON.parse(text) : null
-
   // A 401 on a request that carried a token means the session is no longer valid (expired,
-  // or signed with a rotated secret). Login/register 401s are just wrong credentials.
+  // revoked, or signed with a rotated secret). Login/register 401s are just wrong credentials.
+  // Checked before reading the body, which may not even be JSON.
   if (res.status === 401 && token && !path.startsWith('/auth/')) {
     window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT))
     throw new ApiError('Your session has expired. Please log in again.', 401)
   }
 
+  if (res.status === 204) return undefined as T
+  const text = await res.text()
+  // Proxies, gateways and timeouts can answer with HTML or plain text instead of our JSON.
+  const data = parseJson(text)
+
   if (!res.ok) {
-    const message = data?.message || 'Something went wrong. Please try again.'
-    throw new ApiError(message, res.status, data?.errors)
+    const message = (isRecord(data) && typeof data.message === 'string' && data.message)
+      || (res.status === 502 || res.status === 503 || res.status === 504
+        ? 'The PrintForge server is temporarily unavailable. Please try again shortly.'
+        : 'Something went wrong. Please try again.')
+    const errors = isRecord(data) && isRecord(data.errors) ? data.errors as Record<string, string> : undefined
+    throw new ApiError(message, res.status, errors)
   }
-  return data as T
+  if (text && data === undefined) {
+    throw new ApiError('The server sent an unexpected response. Please try again.', res.status)
+  }
+  return (data ?? null) as T
+}
+
+/** Parsed JSON, null for an empty body, or undefined if the body is not JSON. */
+function parseJson(text: string): unknown {
+  if (!text) return null
+  try {
+    return JSON.parse(text)
+  } catch {
+    return undefined
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
 export const api = {
