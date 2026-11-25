@@ -1,5 +1,6 @@
 package com.printforge.service;
 
+import com.printforge.util.FileSignatures;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
@@ -40,6 +41,7 @@ public class ProductImageService {
     String originalName = file.getOriginalFilename() == null ? "photo" : file.getOriginalFilename();
     String extension = extensionOf(originalName);
     if (!ALLOWED_EXTENSIONS.contains(extension)) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported image type. Please upload a JPG, PNG, WEBP, or GIF file");
+    if (!contentMatches(file, extension)) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The file content is not a valid " + extension.toUpperCase() + " image");
     delete(productId);
     Path destination = root.resolve(productId + "." + extension);
     try {
@@ -71,6 +73,15 @@ public class ProductImageService {
     if (name.endsWith(".webp")) return MediaType.valueOf("image/webp");
     if (name.endsWith(".gif")) return MediaType.IMAGE_GIF;
     return MediaType.IMAGE_JPEG;
+  }
+
+  /** Photos are served with a type taken from the extension, so the bytes must really be that type. */
+  private static boolean contentMatches(MultipartFile file, String extension) {
+    try {
+      return FileSignatures.looksLikeImage(extension, file::getInputStream);
+    } catch (IOException e) {
+      return false;
+    }
   }
 
   private String extensionOf(String fileName) {

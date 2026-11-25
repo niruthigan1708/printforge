@@ -1,5 +1,6 @@
 package com.printforge.service;
 
+import com.printforge.util.FileSignatures;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -36,6 +37,7 @@ public class FileStorageService {
     String originalName = displayName(file.getOriginalFilename());
     String extension = extensionOf(originalName);
     if (!ALLOWED_EXTENSIONS.contains(extension)) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported file type. Please upload an STL, 3MF, or OBJ file");
+    if (!contentMatches(file, extension)) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The file content is not a valid " + extension.toUpperCase() + " model. Please check the file and try again");
     String storedName = UUID.randomUUID() + "." + extension;
     Path destination = root.resolve(storedName);
     try {
@@ -62,6 +64,15 @@ public class FileStorageService {
       // a path recorded on another OS: treat as missing
     }
     return Optional.empty();
+  }
+
+  /** The extension alone proves nothing (any file can be renamed .stl), so sniff the bytes too. */
+  private static boolean contentMatches(MultipartFile file, String extension) {
+    try {
+      return FileSignatures.looksLikeModel(extension, file.getSize(), file::getInputStream);
+    } catch (IOException e) {
+      return false;
+    }
   }
 
   private static final int MAX_DISPLAY_NAME = 200;
