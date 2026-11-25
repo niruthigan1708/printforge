@@ -11,9 +11,22 @@ export class ApiError extends Error {
   }
 }
 
+/** Fired on window when the server rejects our token; the auth context logs the user out. */
+export const SESSION_EXPIRED_EVENT = 'printforge:session-expired'
+
 export function getToken(): string | null {
   if (typeof window === 'undefined') return null
   return localStorage.getItem(TOKEN_KEY)
+}
+
+/** True if the JWT's `exp` claim is in the past (or the token cannot be read). */
+export function isTokenExpired(token: string): boolean {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')))
+    return typeof payload.exp !== 'number' || payload.exp * 1000 <= Date.now()
+  } catch {
+    return true
+  }
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -33,6 +46,13 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   if (res.status === 204) return undefined as T
   const text = await res.text()
   const data = text ? JSON.parse(text) : null
+
+  // A 401 on a request that carried a token means the session is no longer valid (expired,
+  // or signed with a rotated secret). Login/register 401s are just wrong credentials.
+  if (res.status === 401 && token && !path.startsWith('/auth/')) {
+    window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT))
+    throw new ApiError('Your session has expired. Please log in again.', 401)
+  }
 
   if (!res.ok) {
     const message = data?.message || 'Something went wrong. Please try again.'
