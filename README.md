@@ -124,7 +124,7 @@ See [`.env.example`](.env.example). The backend loads `backend/.env` automatical
 | Variable | Used by | Purpose |
 |---|---|---|
 | `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD` | backend | PostgreSQL connection |
-| `JWT_SECRET` | backend | HMAC signing key for JWTs — set to a long random value |
+| `JWT_SECRET` | backend | **Required.** HMAC signing key for JWTs — a long random value (≥32 bytes). The backend refuses to start if it is missing, too short, or left as the `.env.example` placeholder |
 | `JWT_EXPIRATION` | backend | Token lifetime in ms (default 24h) |
 | `UPLOAD_DIR` | backend | Where custom-print uploads are stored (default `backend/uploads/custom-prints`) |
 | `PRODUCT_IMAGE_DIR` | backend | Where uploaded product photos are stored (default `backend/uploads/products`) |
