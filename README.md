@@ -43,7 +43,7 @@ Captured from a local run with the seeded demo data (demo accounts, generated pl
 
 **Backend:** Java 21, Spring Boot 3, Spring Web, Spring Data JPA, Spring Security (JWT), Bean Validation, Lombok, Maven
 **Database:** PostgreSQL
-**Frontend:** Next.js (App Router), React, TypeScript, hand-rolled CSS design system (no UI framework)
+**Frontend:** Next.js 16 (App Router), React 19, TypeScript, hand-rolled CSS design system (no UI framework)
 **Testing:** JUnit 5, Spring Boot Test, MockMvc, H2 (in-memory, test-only)
 
 ## Architecture
@@ -118,7 +118,7 @@ Errors are returned as consistent JSON: `{ "message", "status", "timestamp" }` (
 
 ## How to Run
 
-**Prerequisites:** Java 21, Maven, Node.js, PostgreSQL running locally.
+**Prerequisites:** Java 21, Maven, Node.js 20.9+, PostgreSQL running locally.
 
 ```bash
 # 1. Create an empty database (name must match DB_NAME below)
