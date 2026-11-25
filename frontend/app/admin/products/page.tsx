@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Trash2, Edit, Plus, Box } from 'lucide-react'
 import { api, ApiError, productImageUrl } from '../../../lib/api'
 import { money, type Page, type Product } from '../../../lib/types'
@@ -10,27 +10,38 @@ import { placeholderImage } from '../../../lib/placeholder'
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
 
   const [pageNumber, setPageNumber] = useState(0)
   const [pageInfo, setPageInfo] = useState<Page<Product> | null>(null)
 
-  const load = useCallback(() => {
-    setLoading(true)
+  // Bumped after a delete to refetch the current page.
+  const [reloadToken, setReloadToken] = useState(0)
+  // Loading is derived from which request last finished, so the effect never sets it synchronously.
+  const requestKey = `${pageNumber}:${reloadToken}`
+  const [finishedKey, setFinishedKey] = useState<string | null>(null)
+  const loading = finishedKey !== requestKey
+
+  useEffect(() => {
+    let stale = false
+    const key = `${pageNumber}:${reloadToken}`
     api.get<Page<Product>>(`/admin/products?page=${pageNumber}&size=20`)
       .then(result => {
+        if (stale) return
         // Deleting the last item on the last page leaves it empty; step back a page.
         if (result.content.length === 0 && result.page > 0) { setPageNumber(result.page - 1); return }
         setPageInfo(result)
         setProducts(result.content)
+        setFinishedKey(key)
       })
-      .catch(err => setError(err instanceof ApiError ? err.message : 'Could not load products.'))
-      .finally(() => setLoading(false))
-  }, [pageNumber])
-
-  useEffect(load, [load])
+      .catch(err => {
+        if (stale) return
+        setError(err instanceof ApiError ? err.message : 'Could not load products.')
+        setFinishedKey(key)
+      })
+    return () => { stale = true }
+  }, [pageNumber, reloadToken])
 
   async function remove(product: Product) {
     if (!confirm(`Delete "${product.name}"? If it appears in past orders it will be archived (hidden from the shop) instead.`)) return
@@ -40,7 +51,7 @@ export default function AdminProductsPage() {
         ? `"${product.name}" has existing orders, so it was archived and hidden from the shop.`
         : `"${product.name}" was successfully deleted.`)
       setTimeout(() => setNotice(''), 3000)
-      load()
+      setReloadToken(token => token + 1)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not delete this product.')
     }

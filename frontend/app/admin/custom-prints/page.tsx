@@ -10,18 +10,23 @@ import { Pagination } from '../../../components/Pagination'
 
 export default function AdminCustomPrintsPage() {
   const [requests, setRequests] = useState<CustomPrintRequest[]>([])
-  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   const [pageNumber, setPageNumber] = useState(0)
   const [pageInfo, setPageInfo] = useState<Page<CustomPrintRequest> | null>(null)
 
+  // Loading is derived from which page last finished, so the effect never sets it synchronously.
+  const [finishedPage, setFinishedPage] = useState<number | null>(null)
+  const loading = finishedPage !== pageNumber
+
   useEffect(() => {
-    setLoading(true)
-    api.get<Page<CustomPrintRequest>>(`/admin/custom-prints?page=${pageNumber}&size=20`)
-      .then(result => { setPageInfo(result); setRequests(result.content) })
-      .catch(err => setError(err instanceof ApiError ? err.message : 'Could not load custom requests.'))
-      .finally(() => setLoading(false))
+    let stale = false
+    const page = pageNumber
+    api.get<Page<CustomPrintRequest>>(`/admin/custom-prints?page=${page}&size=20`)
+      .then(result => { if (!stale) { setPageInfo(result); setRequests(result.content) } })
+      .catch(err => { if (!stale) setError(err instanceof ApiError ? err.message : 'Could not load custom requests.') })
+      .finally(() => { if (!stale) setFinishedPage(page) })
+    return () => { stale = true }
   }, [pageNumber])
 
   return (

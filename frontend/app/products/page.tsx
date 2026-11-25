@@ -18,8 +18,12 @@ function ProductsPageInner() {
   const [query, setQuery] = useState(searchParams.get('search') || '')
   const [category, setCategory] = useState(searchParams.get('category') || 'All')
   const [sort, setSort] = useState('newest')
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  // Loading and error are derived from which request last finished, so the effect never has to
+  // reset them synchronously (and a stale response can't overwrite a newer search).
+  const requestKey = `${query}|${category}`
+  const [finished, setFinished] = useState<{ key: string; error: string } | null>(null)
+  const loading = finished?.key !== requestKey
+  const error = finished?.key === requestKey ? finished.error : ''
   const [notice, setNotice] = useState('')
 
   useEffect(() => {
@@ -27,16 +31,16 @@ function ProductsPageInner() {
   }, [])
 
   useEffect(() => {
-    setLoading(true)
-    setError('')
+    let stale = false
+    const key = `${query}|${category}`
     const params = new URLSearchParams()
     if (query) params.set('search', query)
     if (category !== 'All') params.set('category', category)
-    
+
     api.get<Product[]>(`/products${params.toString() ? `?${params}` : ''}`)
-      .then(setProducts)
-      .catch(err => setError(err instanceof ApiError ? err.message : 'Could not load products right now.'))
-      .finally(() => setLoading(false))
+      .then(list => { if (!stale) { setProducts(list); setFinished({ key, error: '' }) } })
+      .catch(err => { if (!stale) setFinished({ key, error: err instanceof ApiError ? err.message : 'Could not load products right now.' }) })
+    return () => { stale = true }
   }, [query, category])
 
   const sorted = useMemo(() => {

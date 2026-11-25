@@ -10,7 +10,6 @@ import { Pagination } from '../../../components/Pagination'
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([])
-  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [updatingId, setUpdatingId] = useState<number | null>(null)
@@ -18,12 +17,18 @@ export default function AdminOrdersPage() {
   const [pageNumber, setPageNumber] = useState(0)
   const [pageInfo, setPageInfo] = useState<Page<Order> | null>(null)
 
+  // Loading is derived from which page last finished, so the effect never sets it synchronously.
+  const [finishedPage, setFinishedPage] = useState<number | null>(null)
+  const loading = finishedPage !== pageNumber
+
   useEffect(() => {
-    setLoading(true)
-    api.get<Page<Order>>(`/admin/orders?page=${pageNumber}&size=20`)
-      .then(result => { setPageInfo(result); setOrders(result.content) })
-      .catch(err => setError(err instanceof ApiError ? err.message : 'Could not load orders.'))
-      .finally(() => setLoading(false))
+    let stale = false
+    const page = pageNumber
+    api.get<Page<Order>>(`/admin/orders?page=${page}&size=20`)
+      .then(result => { if (!stale) { setPageInfo(result); setOrders(result.content) } })
+      .catch(err => { if (!stale) setError(err instanceof ApiError ? err.message : 'Could not load orders.') })
+      .finally(() => { if (!stale) setFinishedPage(page) })
+    return () => { stale = true }
   }, [pageNumber])
 
   async function updateStatus(order: Order, status: OrderStatus) {

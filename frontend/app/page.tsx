@@ -17,8 +17,8 @@ export default function Home() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
 
+  // Runs once on mount; `loading` already starts true.
   useEffect(() => {
-    setLoading(true)
     Promise.all([api.get<Product[]>('/products'), api.get<Category[]>('/categories')])
       .then(([productList, categoryList]) => {
         setProducts(productList.slice(0, 4))
