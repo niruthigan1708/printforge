@@ -31,7 +31,7 @@ function ProductsPageInner() {
     setError('')
     const params = new URLSearchParams()
     if (query) params.set('search', query)
-    else if (category !== 'All') params.set('category', category)
+    if (category !== 'All') params.set('category', category)
     
     api.get<Product[]>(`/products${params.toString() ? `?${params}` : ''}`)
       .then(setProducts)
