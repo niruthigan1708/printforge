@@ -67,8 +67,28 @@ class ProductManagementTest {
     mvc.perform(delete("/api/products/" + id).header("Authorization", "Bearer " + adminToken))
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.archived").value(true));
-    mvc.perform(get("/api/products/" + id)).andExpect(status().isOk()).andExpect(jsonPath("$.active").value(false));
+    // Archived: hidden from the public catalogue and detail page, still visible to admins.
+    mvc.perform(get("/api/products/" + id)).andExpect(status().isNotFound());
     mvc.perform(get("/api/products")).andExpect(jsonPath("$[?(@.id == " + id + ")]").isEmpty());
+    mvc.perform(get("/api/admin/products/" + id).header("Authorization", "Bearer " + adminToken))
+      .andExpect(status().isOk()).andExpect(jsonPath("$.active").value(false));
+  }
+
+  @Test void inactiveProductsAreHiddenFromThePublicButNotFromAdmins() throws Exception {
+    String adminToken = tokens.tokenFor("visibility-admin@example.com", Role.ADMIN);
+    String customerToken = tokens.tokenFor("visibility-customer@example.com", Role.CUSTOMER);
+    Category category = categories.save(new Category("Visibility Category", "desc"));
+    var body = Map.of("name", "Hidden Stand", "description", "desc", "price", "500.00", "stockQuantity", 10, "material", "PLA", "color", "Black", "imageUrl", "", "categoryId", category.getId(), "active", false);
+    String response = mvc.perform(post("/api/products").header("Authorization", "Bearer " + adminToken).contentType("application/json").content(json.writeValueAsString(body)))
+      .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+    Long id = json.readTree(response).get("id").asLong();
+
+    mvc.perform(get("/api/products/" + id)).andExpect(status().isNotFound());
+    mvc.perform(get("/api/products/" + id).header("Authorization", "Bearer " + customerToken)).andExpect(status().isNotFound());
+    mvc.perform(get("/api/admin/products/" + id).header("Authorization", "Bearer " + adminToken)).andExpect(status().isOk());
+    mvc.perform(get("/api/admin/products/" + id).header("Authorization", "Bearer " + customerToken)).andExpect(status().isForbidden());
+    // Photos stay reachable so carts and past orders can still show them.
+    mvc.perform(get("/api/products/" + id + "/image")).andExpect(status().isOk());
   }
 
   @Test void searchAndCategoryFiltersAreAppliedTogether() throws Exception {
