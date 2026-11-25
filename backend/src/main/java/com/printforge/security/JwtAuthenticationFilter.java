@@ -28,10 +28,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
   private final UserRepository users;
 
   @Override protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws ServletException, IOException {
+    // Browsers send the httpOnly session cookie; API clients may send a bearer token instead.
     String header = request.getHeader("Authorization");
-    if (header != null && header.startsWith("Bearer ")) {
+    String token = header != null && header.startsWith("Bearer ") ? header.substring(7) : SessionCookies.read(request).orElse(null);
+    if (token != null) {
       try {
-        Claims claims = jwt.parse(header.substring(7));
+        Claims claims = jwt.parse(token);
         Number tokenVersion = claims.get(JwtService.TOKEN_VERSION_CLAIM, Number.class);
         User user = users.findByEmailIgnoreCase(claims.getSubject()).orElse(null);
         // Tokens issued before versioning, for deleted users, or before a logout are not accepted.
