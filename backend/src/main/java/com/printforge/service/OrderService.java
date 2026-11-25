@@ -62,7 +62,8 @@ public class OrderService {
 
   @Transactional
   public OrderResponse updateStatus(Long id, OrderStatus status) {
-    Order order = orders.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
+    // Lock the order so two concurrent cancellations cannot both restock it.
+    Order order = orders.findByIdForUpdate(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
     OrderStatus current = order.getStatus();
     if (current == status) return OrderResponse.from(order);
     if (current.isTerminal()) throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot change the status of a " + current + " order");
@@ -70,8 +71,22 @@ public class OrderService {
       String reason = status == OrderStatus.CANCELLED ? "an order cannot be cancelled once it has shipped" : "orders can only move forward";
       throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot move an order from " + current + " to " + status + ": " + reason);
     }
+    if (status == OrderStatus.CANCELLED) restock(order);
     order.setStatus(status);
     order.setUpdatedAt(Instant.now());
     return OrderResponse.from(order);
+  }
+
+  /** Returns a cancelled order's units to stock, locking products in the same id order as checkout. */
+  private void restock(Order order) {
+    Map<Long, Integer> quantities = new TreeMap<>();
+    for (OrderItem item : order.getItems()) quantities.merge(item.getProduct().getId(), item.getQuantity(), Integer::sum);
+    for (Map.Entry<Long, Integer> line : quantities.entrySet()) {
+      // Archived products are restocked too, so the count is right if they are reactivated.
+      products.findByIdForUpdate(line.getKey()).ifPresent(product -> {
+        product.setStockQuantity(product.getStockQuantity() + line.getValue());
+        product.setUpdatedAt(Instant.now());
+      });
+    }
   }
 }
