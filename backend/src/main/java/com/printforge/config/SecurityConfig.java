@@ -16,6 +16,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
+import org.springframework.security.web.header.writers.StaticHeadersWriter;
 import org.springframework.security.web.csrf.CsrfException;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import java.io.IOException;
@@ -32,6 +34,13 @@ public class SecurityConfig {
     return http
       .csrf(csrf -> csrf.csrfTokenRepository(csrfTokens()).requireCsrfProtectionMatcher(csrfRequired()))
       .cors(cors -> {})
+      // On top of Spring Security's defaults (nosniff, X-Frame-Options DENY, no-cache for API
+      // responses, HSTS over HTTPS): the API only serves JSON and images, so its own responses
+      // may load or run nothing. This also neutralises scripts in an SVG opened directly.
+      .headers(headers -> headers
+        .contentSecurityPolicy(csp -> csp.policyDirectives("default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"))
+        .referrerPolicy(referrer -> referrer.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER))
+        .addHeaderWriter(new StaticHeadersWriter("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()")))
       .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
       .authorizeHttpRequests(auth -> auth
         // Logging out and reading the current user need a session; the rest of /api/auth is public.
