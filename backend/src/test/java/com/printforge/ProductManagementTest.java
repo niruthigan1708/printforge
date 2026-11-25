@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
+import java.util.List;
 import java.util.Map;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -34,6 +35,40 @@ class ProductManagementTest {
 
     Long id = json.readTree(response).get("id").asLong();
     mvc.perform(get("/api/products/" + id)).andExpect(status().isOk()).andExpect(jsonPath("$.stockQuantity").value(10));
+  }
+
+  private Long createProduct(String adminToken, String name, String categoryName) throws Exception {
+    Category category = categories.save(new Category(categoryName, "desc"));
+    var body = Map.of("name", name, "description", "desc", "price", "500.00", "stockQuantity", 10, "material", "PLA", "color", "Black", "imageUrl", "", "categoryId", category.getId(), "active", true);
+    String response = mvc.perform(post("/api/products").header("Authorization", "Bearer " + adminToken).contentType("application/json").content(json.writeValueAsString(body)))
+      .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+    return json.readTree(response).get("id").asLong();
+  }
+
+  @Test void deletingAnUnorderedProductRemovesIt() throws Exception {
+    String adminToken = tokens.tokenFor("delete-admin@example.com", Role.ADMIN);
+    Long id = createProduct(adminToken, "Never Ordered", "Delete Category A");
+
+    mvc.perform(delete("/api/products/" + id).header("Authorization", "Bearer " + adminToken))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.archived").value(false));
+    mvc.perform(get("/api/products/" + id)).andExpect(status().isNotFound());
+  }
+
+  @Test void deletingAnOrderedProductArchivesItInsteadOfFailing() throws Exception {
+    String adminToken = tokens.tokenFor("delete-admin@example.com", Role.ADMIN);
+    String customerToken = tokens.tokenFor("delete-customer@example.com", Role.CUSTOMER);
+    Long id = createProduct(adminToken, "Already Ordered", "Delete Category B");
+    var order = Map.of("items", List.of(Map.of("productId", id, "quantity", 1)),
+      "shippingName", "Jane", "shippingPhone", "0771234567", "shippingAddress", "1 Road", "shippingCity", "Colombo", "shippingPostalCode", "00300");
+    mvc.perform(post("/api/orders").header("Authorization", "Bearer " + customerToken).contentType("application/json").content(json.writeValueAsString(order)))
+      .andExpect(status().isOk());
+
+    mvc.perform(delete("/api/products/" + id).header("Authorization", "Bearer " + adminToken))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.archived").value(true));
+    mvc.perform(get("/api/products/" + id)).andExpect(status().isOk()).andExpect(jsonPath("$.active").value(false));
+    mvc.perform(get("/api/products")).andExpect(jsonPath("$[?(@.id == " + id + ")]").isEmpty());
   }
 
   @Test void nonAdminCannotCreateProduct() throws Exception {
