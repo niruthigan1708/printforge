@@ -12,7 +12,6 @@ import java.util.Optional;
 
 public interface ProductRepository extends JpaRepository<Product, Long> {
   List<Product> findByActiveTrueOrderByCreatedAtDesc();
-  List<Product> findAllByOrderByCreatedAtDesc();
   List<Product> findByActiveTrueAndNameContainingIgnoreCaseOrderByCreatedAtDesc(String search);
   List<Product> findByActiveTrueAndCategory_NameIgnoreCaseOrderByCreatedAtDesc(String category);
   List<Product> findByActiveTrueAndNameContainingIgnoreCaseAndCategory_NameIgnoreCaseOrderByCreatedAtDesc(String search, String category);

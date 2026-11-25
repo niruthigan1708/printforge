@@ -9,6 +9,5 @@ import java.util.Optional;
 public interface CustomPrintRequestRepository extends JpaRepository<CustomPrintRequest, Long> {
   List<CustomPrintRequest> findByCustomerOrderByCreatedAtDesc(User customer);
   Optional<CustomPrintRequest> findByIdAndCustomer(Long id, User customer);
-  List<CustomPrintRequest> findAllByOrderByCreatedAtDesc();
   List<CustomPrintRequest> findTop5ByOrderByCreatedAtDesc();
 }

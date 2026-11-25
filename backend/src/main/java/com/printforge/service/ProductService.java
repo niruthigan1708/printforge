@@ -1,6 +1,7 @@
 package com.printforge.service;
 
 import com.printforge.dto.ProductDeleteResponse;
+import com.printforge.dto.PageResponse;
 import com.printforge.dto.ProductRequest;
 import com.printforge.dto.ProductResponse;
 import com.printforge.entity.Category;
@@ -10,6 +11,7 @@ import com.printforge.repository.OrderItemRepository;
 import com.printforge.repository.ProductRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -51,7 +53,8 @@ public class ProductService {
   /** Admin lookup: includes inactive products so they can still be edited or reactivated. */
   public ProductResponse findById(Long id) { return ProductResponse.from(products.findById(id).orElseThrow(() -> new EntityNotFoundException("Product not found"))); }
 
-  public List<ProductResponse> findAllForAdmin() { return products.findAllByOrderByCreatedAtDesc().stream().map(ProductResponse::from).toList(); }
+  @Transactional(readOnly = true)
+  public PageResponse<ProductResponse> findAllForAdmin(Pageable pageable) { return PageResponse.from(products.findAll(pageable), ProductResponse::from); }
 
   @Transactional
   public ProductResponse create(ProductRequest request) {

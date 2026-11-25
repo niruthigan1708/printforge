@@ -2,6 +2,7 @@ package com.printforge.service;
 
 import com.printforge.dto.CustomPrintRequestResponse;
 import com.printforge.dto.FieldLimits;
+import com.printforge.dto.PageResponse;
 import com.printforge.dto.QuoteRequest;
 import com.printforge.entity.CustomPrintRequest;
 import com.printforge.entity.RequestStatus;
@@ -9,6 +10,7 @@ import com.printforge.entity.User;
 import com.printforge.repository.CustomPrintRequestRepository;
 import com.printforge.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -101,8 +103,9 @@ public class CustomPrintService {
     return CustomPrintRequestResponse.from(request);
   }
 
-  public List<CustomPrintRequestResponse> all() {
-    return requests.findAllByOrderByCreatedAtDesc().stream().map(CustomPrintRequestResponse::from).toList();
+  @Transactional(readOnly = true)
+  public PageResponse<CustomPrintRequestResponse> all(Pageable pageable) {
+    return PageResponse.from(requests.findAll(pageable), CustomPrintRequestResponse::from);
   }
 
   public CustomPrintRequest findEntity(Long id) {

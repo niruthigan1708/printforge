@@ -5,6 +5,7 @@ import com.printforge.dto.*;
 import com.printforge.entity.*;
 import com.printforge.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -66,7 +67,7 @@ public class OrderService {
   public OrderResponse getMine(String email, Long id) { User user = users.findByEmailIgnoreCase(email).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found")); return OrderResponse.from(orders.findByIdAndCustomer(id, user).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"))); }
 
   @Transactional(readOnly = true)
-  public List<OrderResponse> all() { return orders.findAll().stream().sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt())).map(OrderResponse::from).toList(); }
+  public PageResponse<OrderResponse> all(Pageable pageable) { return PageResponse.from(orders.findAll(pageable), OrderResponse::from); }
 
   /** A customer cancelling their own order; only allowed while it is still PENDING. */
   @Transactional

@@ -2,6 +2,7 @@ package com.printforge.controller;
 
 import com.printforge.dto.CustomPrintRequestResponse;
 import com.printforge.dto.CustomPrintStatusUpdateRequest;
+import com.printforge.dto.PageResponse;
 import com.printforge.dto.QuoteRequest;
 import com.printforge.entity.CustomPrintRequest;
 import com.printforge.service.CustomPrintService;
@@ -19,14 +20,14 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.List;
 
 @RestController @RequestMapping("/api/admin/custom-prints") @RequiredArgsConstructor
 public class AdminCustomPrintController {
   private final CustomPrintService service;
   private final FileStorageService fileStorage;
 
-  @GetMapping public List<CustomPrintRequestResponse> all() { return service.all(); }
+  /** Newest first, paged: ?page=0&size=20 (max 100). */
+  @GetMapping public PageResponse<CustomPrintRequestResponse> all(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) { return service.all(PageResponse.newestFirst(page, size)); }
   @GetMapping("/{id}") public CustomPrintRequestResponse get(@PathVariable Long id) { return service.get(id); }
 
   @GetMapping("/{id}/file")
