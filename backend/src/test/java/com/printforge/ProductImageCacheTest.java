@@ -48,7 +48,7 @@ class ProductImageCacheTest {
   }
 
   private String upload(Product product, String bytes) throws Exception {
-    MockMultipartFile file = new MockMultipartFile("file", "photo.png", "image/png", bytes.getBytes());
+    MockMultipartFile file = new MockMultipartFile("file", "photo.png", "image/png", com.printforge.support.TestFiles.png(bytes));
     String body = mvc.perform(multipart("/api/products/" + product.getId() + "/image").file(file)
         .header("Authorization", "Bearer " + tokens.tokenFor("image-cache-admin@example.com", Role.ADMIN)))
       .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
@@ -81,7 +81,7 @@ class ProductImageCacheTest {
       .andExpect(header().string("Cache-Control", containsString("no-cache")));
     mvc.perform(get("/api/products/" + product.getId() + "/image").param("v", after))
       .andExpect(status().isOk())
-      .andExpect(content().bytes("new-photo".getBytes()))
+      .andExpect(content().bytes(com.printforge.support.TestFiles.png("new-photo")))
       .andExpect(header().string("Cache-Control", containsString("immutable")));
   }
 

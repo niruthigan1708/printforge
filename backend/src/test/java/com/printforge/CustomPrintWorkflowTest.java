@@ -45,7 +45,7 @@ class CustomPrintWorkflowTest {
   @Test void adminCanQuoteAndCustomerCanAcceptTheRequest() throws Exception {
     String customerToken = tokens.tokenFor("custom-print-quote-customer@example.com", Role.CUSTOMER);
     String adminToken = tokens.tokenFor("custom-print-quote-admin@example.com", Role.ADMIN);
-    MockMultipartFile file = new MockMultipartFile("file", "model.3mf", "model/3mf", "3mf-bytes".getBytes());
+    MockMultipartFile file = new MockMultipartFile("file", "model.3mf", "model/3mf", com.printforge.support.TestFiles.threeMf());
 
     String created = mvc.perform(multipart("/api/custom-prints").file(file)
         .param("material", "PETG").param("color", "Blue").param("quantity", "1")
