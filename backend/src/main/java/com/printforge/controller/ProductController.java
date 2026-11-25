@@ -29,26 +29,41 @@ public class ProductController {
   @GetMapping("/{id}") public ProductResponse get(@PathVariable Long id) { return service.findActiveById(id); }
 
   @GetMapping("/{id}/image")
-  public ResponseEntity<?> image(@PathVariable Long id) {
+  public ResponseEntity<?> image(@PathVariable Long id, @RequestParam(name = "v", required = false) String version) {
     // Photos stay available for archived products: carts and past orders still show them.
     ProductResponse product = service.findById(id);
+    // A versioned URL (?v=<imageVersion>) names one exact photo, so it can be cached for good;
+    // when the photo changes the version changes and clients fetch a new URL. Unversioned URLs
+    // must be revalidated every time, or a replaced photo stays stale in browsers.
+    CacheControl cache = version != null && version.equals(product.imageVersion())
+      ? CacheControl.maxAge(Duration.ofDays(365)).cachePublic().immutable()
+      : CacheControl.noCache();
     var stored = productImages.find(id);
     if (stored.isPresent()) {
       Resource resource = stored.get();
-      return ResponseEntity.ok().contentType(productImages.mediaTypeFor(resource)).cacheControl(CacheControl.maxAge(Duration.ofDays(1))).body(resource);
+      var response = ResponseEntity.ok().contentType(productImages.mediaTypeFor(resource)).cacheControl(cache);
+      // Last-Modified lets an unversioned revalidation come back as a cheap 304.
+      long modified = lastModified(resource);
+      if (modified > 0) response.lastModified(modified);
+      return response.body(resource);
     }
     if (product.imageUrl() != null && !product.imageUrl().isBlank()) {
-      return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(product.imageUrl())).build();
+      return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(product.imageUrl())).cacheControl(cache).build();
     }
     byte[] svg = PlaceholderImage.svg(product.name(), id);
-    return ResponseEntity.ok().contentType(MediaType.valueOf("image/svg+xml")).cacheControl(CacheControl.maxAge(Duration.ofHours(1))).body(svg);
+    return ResponseEntity.ok().contentType(MediaType.valueOf("image/svg+xml")).cacheControl(cache).body(svg);
+  }
+
+  private static long lastModified(Resource resource) {
+    try { return resource.lastModified(); } catch (java.io.IOException e) { return -1; }
   }
 
   @PostMapping(value = "/{id}/image", consumes = "multipart/form-data") @PreAuthorize("hasRole('ADMIN')")
   public ProductResponse uploadImage(@PathVariable Long id, @RequestParam MultipartFile file) {
-    ProductResponse product = service.findById(id);
+    service.findById(id);
     productImages.store(id, file);
-    return product;
+    // Bump the image version so every versioned URL handed out from now on is new.
+    return service.markImageChanged(id);
   }
 
   @PostMapping @PreAuthorize("hasRole('ADMIN')")

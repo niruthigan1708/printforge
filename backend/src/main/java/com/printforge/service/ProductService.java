@@ -85,6 +85,14 @@ public class ProductService {
     product.setStockQuantity(request.stockQuantity());
   }
 
+  /** Records that the product's photo changed, which bumps its image version. */
+  @Transactional
+  public ProductResponse markImageChanged(Long id) {
+    Product product = products.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
+    product.setUpdatedAt(Instant.now());
+    return ProductResponse.from(product);
+  }
+
   @Transactional
   public ProductDeleteResponse delete(Long id) {
     Product product = products.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
