@@ -25,6 +25,20 @@ Built as a realistic, portfolio-quality MVP — clean layered architecture, real
 - Order list and status management
 - Custom print request review: download the uploaded file, send a quote, update production status
 
+## Screenshots
+
+Captured from a local run with the seeded demo data (demo accounts, generated placeholder product photos).
+
+| Storefront | Product detail |
+|---|---|
+| ![Home page](screenshots/01-home.png) | ![Product detail](screenshots/03-product-detail.png) |
+| **Catalogue** | **Cart** (prices refreshed from the server, free-delivery threshold) |
+| ![Catalogue with filters](screenshots/02-catalogue.png) | ![Cart](screenshots/04-cart.png) |
+| **Custom print upload** | **Admin dashboard** |
+| ![Custom print upload](screenshots/05-custom-print-upload.png) | ![Admin dashboard](screenshots/06-admin-dashboard.png) |
+| **Admin products** | **Admin orders** (only valid next statuses offered) |
+| ![Admin product list](screenshots/07-admin-products.png) | ![Admin order list](screenshots/08-admin-orders.png) |
+
 ## Tech Stack
 
 **Backend:** Java 21, Spring Boot 3, Spring Web, Spring Data JPA, Spring Security (JWT), Bean Validation, Lombok, Maven
