@@ -4,17 +4,23 @@ import Link from 'next/link'
 import { ArrowLeft, Minus, Plus, Trash2, ShoppingBag, ShieldCheck, ArrowRight, Truck } from 'lucide-react'
 import { Header } from '../../components/Header'
 import { money } from '../../lib/types'
-import { useCart } from '../../lib/cart-context'
+import { useEffect, useState } from 'react'
+import { describeCartChanges, useCart } from '../../lib/cart-context'
 import { placeholderImage } from '../../lib/placeholder'
 import { productImageUrl } from '../../lib/api'
 
-const FREE_SHIPPING_THRESHOLD = 5000
-
 export default function CartPage() {
-  const { items, updateQuantity, removeItem, subtotal, deliveryFee, total } = useCart()
+  const { items, updateQuantity, removeItem, refresh, subtotal, deliveryFee, total, freeDeliveryThreshold, hasUnavailable } = useCart()
+  const [notice, setNotice] = useState('')
 
-  const freeShippingProgress = Math.min(100, Math.round((subtotal / FREE_SHIPPING_THRESHOLD) * 100))
-  const remainingForFreeShipping = Math.max(0, FREE_SHIPPING_THRESHOLD - subtotal)
+  // Prices and stock saved in the cart can be days old: re-read them whenever the cart is opened.
+  useEffect(() => {
+    refresh().then(result => setNotice(describeCartChanges(result) ?? '')).catch(() => {})
+  }, [refresh])
+
+  // The threshold comes from the server (it applies it when pricing the order); no bar if it's off.
+  const freeShippingProgress = freeDeliveryThreshold ? Math.min(100, Math.round((subtotal / freeDeliveryThreshold) * 100)) : 0
+  const remainingForFreeShipping = freeDeliveryThreshold ? Math.max(0, freeDeliveryThreshold - subtotal) : 0
 
   return (
     <main>
@@ -56,8 +62,9 @@ export default function CartPage() {
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column' }}>
+                {notice && <div className="alert alert-success" style={{ marginBottom: 16 }}>{notice}</div>}
                 {/* Free Delivery Bar */}
-                <div
+                {freeDeliveryThreshold && <div
                   style={{
                     background: 'var(--bg-surface)',
                     border: '1px solid var(--border-subtle)',
@@ -79,7 +86,7 @@ export default function CartPage() {
                   <div className="shipping-bar-wrap">
                     <div className="shipping-bar-fill" style={{ width: `${freeShippingProgress}%` }} />
                   </div>
-                </div>
+                </div>}
 
                 {/* Items */}
                 <div
@@ -92,10 +99,10 @@ export default function CartPage() {
                   }}
                 >
                   {items.map(item => (
-                    <div className="cart-row" key={item.productId}>
+                    <div className="cart-row" key={item.productId} style={item.unavailable ? { opacity: 0.55 } : undefined}>
                       <div className="cart-thumb">
                         <img
-                          src={productImageUrl(item.productId)}
+                          src={productImageUrl(item.productId, item.imageVersion)}
                           alt={item.name}
                           onError={e => {
                             e.currentTarget.onerror = null
@@ -111,12 +118,16 @@ export default function CartPage() {
                         <span style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
                           {item.category} · {item.material}
                         </span>
-                        <strong style={{ fontFamily: 'var(--font-mono)', fontSize: 15, color: 'var(--accent-primary)', marginTop: 4 }}>
-                          {money(item.price)}
-                        </strong>
+                        {item.unavailable ? (
+                          <strong style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>No longer available — please remove it</strong>
+                        ) : (
+                          <strong style={{ fontFamily: 'var(--font-mono)', fontSize: 15, color: 'var(--accent-primary)', marginTop: 4 }}>
+                            {money(item.price)}
+                          </strong>
+                        )}
                       </div>
 
-                      <div className="quantity">
+                      {!item.unavailable && <div className="quantity">
                         <button
                           aria-label="Decrease quantity"
                           onClick={() => updateQuantity(item.productId, item.quantity - 1)}
@@ -131,7 +142,7 @@ export default function CartPage() {
                         >
                           <Plus size={14} />
                         </button>
-                      </div>
+                      </div>}
 
                       <button
                         className="icon-btn"
@@ -160,20 +171,26 @@ export default function CartPage() {
               </div>
               <div className="summary-line">
                 <span style={{ color: 'var(--text-secondary)' }}>Standard Courier Delivery</span>
-                <b>{deliveryFee === 0 ? <span style={{ color: 'var(--accent-emerald)' }}>FREE</span> : money(deliveryFee)}</b>
+                <b>{deliveryFee === null ? '—' : deliveryFee === 0 ? <span style={{ color: 'var(--accent-emerald)' }}>FREE</span> : money(deliveryFee)}</b>
               </div>
               <div className="summary-total">
                 <span>Total Amount</span>
-                <span style={{ color: 'var(--accent-primary)', fontFamily: 'var(--font-mono)' }}>{money(total)}</span>
+                <span style={{ color: 'var(--accent-primary)', fontFamily: 'var(--font-mono)' }}>{total === null ? '—' : money(total)}</span>
               </div>
 
-              <Link
-                className="btn btn-primary"
-                href="/checkout"
-                style={{ width: '100%', padding: '15px 24px', fontSize: 16 }}
-              >
-                Proceed to Checkout <ArrowRight size={18} />
-              </Link>
+              {hasUnavailable ? (
+                <p style={{ fontSize: 13, color: 'var(--text-secondary)', textAlign: 'center' }}>
+                  Remove the items that are no longer available to continue.
+                </p>
+              ) : (
+                <Link
+                  className="btn btn-primary"
+                  href="/checkout"
+                  style={{ width: '100%', padding: '15px 24px', fontSize: 16 }}
+                >
+                  Proceed to Checkout <ArrowRight size={18} />
+                </Link>
+              )}
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 18, color: 'var(--text-muted)', fontSize: 12, justifyContent: 'center' }}>
                 <ShieldCheck size={16} color="var(--accent-emerald)" />
