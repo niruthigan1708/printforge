@@ -12,13 +12,11 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 
 @Service @RequiredArgsConstructor
 public class OrderService {
-  private static final Set<OrderStatus> TERMINAL = Set.of(OrderStatus.DELIVERED, OrderStatus.CANCELLED);
   private final OrderRepository orders; private final UserRepository users; private final ProductRepository products;
 
   @Transactional public OrderResponse create(String email, CreateOrderRequest request) {
@@ -65,7 +63,13 @@ public class OrderService {
   @Transactional
   public OrderResponse updateStatus(Long id, OrderStatus status) {
     Order order = orders.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
-    if (TERMINAL.contains(order.getStatus())) throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot change the status of a " + order.getStatus() + " order");
+    OrderStatus current = order.getStatus();
+    if (current == status) return OrderResponse.from(order);
+    if (current.isTerminal()) throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot change the status of a " + current + " order");
+    if (!current.canTransitionTo(status)) {
+      String reason = status == OrderStatus.CANCELLED ? "an order cannot be cancelled once it has shipped" : "orders can only move forward";
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot move an order from " + current + " to " + status + ": " + reason);
+    }
     order.setStatus(status);
     order.setUpdatedAt(Instant.now());
     return OrderResponse.from(order);
