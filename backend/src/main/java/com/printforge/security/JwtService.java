@@ -17,6 +17,8 @@ public class JwtService {
   /** The placeholder shipped in .env.example — publicly known, so it must never sign real tokens. */
   static final String EXAMPLE_SECRET = "change-me-to-a-long-random-value-at-least-32-chars";
   private static final int MIN_SECRET_BYTES = 32;
+  /** Claim carrying the user's token_version at issue time. */
+  public static final String TOKEN_VERSION_CLAIM = "tv";
 
   public JwtService(@Value("${JWT_SECRET:}") String secret, @Value("${JWT_EXPIRATION:86400000}") long expiration) {
     this.key = Keys.hmacShaKeyFor(validate(secret).getBytes(StandardCharsets.UTF_8)); this.expiration = expiration;
@@ -30,7 +32,9 @@ public class JwtService {
     return secret;
   }
   public String create(User user) {
-    return Jwts.builder().subject(user.getEmail()).claim("role", user.getRole().name()).issuedAt(new Date()).expiration(new Date(System.currentTimeMillis() + expiration)).signWith(key).compact();
+    // No role claim: the filter reads the role from the database on every request, so a role
+    // change applies immediately and a token can never grant more than the account has now.
+    return Jwts.builder().subject(user.getEmail()).claim(TOKEN_VERSION_CLAIM, user.getTokenVersion()).issuedAt(new Date()).expiration(new Date(System.currentTimeMillis() + expiration)).signWith(key).compact();
   }
   public Claims parse(String token) { return Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload(); }
 }
