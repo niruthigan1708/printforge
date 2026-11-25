@@ -11,7 +11,9 @@ import org.springframework.web.server.ResponseStatusException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 @Service @RequiredArgsConstructor
 public class OrderService {
@@ -22,11 +24,18 @@ public class OrderService {
     User customer = users.findByEmailIgnoreCase(email).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
     Order order = new Order(); order.setCustomer(customer); order.setOrderNumber("PF-" + (1001 + orders.count()));
     BigDecimal subtotal = BigDecimal.ZERO;
-    for (CreateOrderRequest.Item requested : request.items()) {
-      Product product = products.findById(requested.productId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
-      if (!product.isActive() || product.getStockQuantity() < requested.quantity()) throw new ResponseStatusException(HttpStatus.CONFLICT, "Insufficient stock for " + product.getName());
-      product.setStockQuantity(product.getStockQuantity() - requested.quantity());
-      OrderItem item = new OrderItem(); item.setOrder(order); item.setProduct(product); item.setProductName(product.getName()); item.setQuantity(requested.quantity()); item.setUnitPrice(product.getPrice()); item.setSubtotal(product.getPrice().multiply(BigDecimal.valueOf(requested.quantity()))); order.getItems().add(item); subtotal = subtotal.add(item.getSubtotal());
+    // Merge repeated lines for the same product, then lock products in ascending id order:
+    // the row locks stop concurrent orders from overselling, and a fixed lock order stops
+    // two multi-item orders from deadlocking on each other.
+    Map<Long, Integer> quantities = new TreeMap<>();
+    for (CreateOrderRequest.Item requested : request.items()) quantities.merge(requested.productId(), requested.quantity(), Integer::sum);
+    for (Map.Entry<Long, Integer> line : quantities.entrySet()) {
+      int quantity = line.getValue();
+      Product product = products.findByIdForUpdate(line.getKey()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
+      if (!product.isActive()) throw new ResponseStatusException(HttpStatus.CONFLICT, product.getName() + " is no longer available");
+      if (product.getStockQuantity() < quantity) throw new ResponseStatusException(HttpStatus.CONFLICT, "Insufficient stock for " + product.getName());
+      product.setStockQuantity(product.getStockQuantity() - quantity);
+      OrderItem item = new OrderItem(); item.setOrder(order); item.setProduct(product); item.setProductName(product.getName()); item.setQuantity(quantity); item.setUnitPrice(product.getPrice()); item.setSubtotal(product.getPrice().multiply(BigDecimal.valueOf(quantity))); order.getItems().add(item); subtotal = subtotal.add(item.getSubtotal());
     }
     order.setSubtotal(subtotal); order.setDeliveryFee(BigDecimal.valueOf(350)); order.setTotalAmount(subtotal.add(order.getDeliveryFee())); order.setShippingName(request.shippingName()); order.setShippingPhone(request.shippingPhone()); order.setShippingAddress(request.shippingAddress()); order.setShippingCity(request.shippingCity()); order.setShippingPostalCode(request.shippingPostalCode());
     return OrderResponse.from(orders.save(order));
