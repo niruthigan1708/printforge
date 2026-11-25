@@ -214,6 +214,7 @@ export function ProductForm({ product }: { product?: Product }) {
           <input
             required
             placeholder="e.g. Hexagonal Cable Organizer"
+            maxLength={150}
             value={values.name}
             onChange={e => setValues({ ...values, name: e.target.value })}
           />
@@ -225,6 +226,7 @@ export function ProductForm({ product }: { product?: Product }) {
             required
             rows={4}
             placeholder="Explain functional dimensions, intended purpose, and design details."
+            maxLength={2000}
             value={values.description}
             onChange={e => setValues({ ...values, description: e.target.value })}
           />
@@ -274,6 +276,7 @@ export function ProductForm({ product }: { product?: Product }) {
             <input
               required
               placeholder="e.g. Matte Black, Silk Gold"
+              maxLength={50}
               value={values.color}
               onChange={e => setValues({ ...values, color: e.target.value })}
             />
@@ -299,6 +302,7 @@ export function ProductForm({ product }: { product?: Product }) {
         <label>
           Fallback Image URL (Optional)
           <input
+            maxLength={2048}
             value={values.imageUrl}
             onChange={e => setValues({ ...values, imageUrl: e.target.value })}
             placeholder="https://… (used if no local photo is uploaded)"

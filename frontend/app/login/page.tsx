@@ -86,6 +86,7 @@ function LoginPageInner() {
                 required
                 type="email"
                 placeholder="name@example.com"
+                maxLength={254}
                 value={email}
                 onChange={e => setEmail(e.target.value)}
               />

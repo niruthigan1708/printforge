@@ -194,6 +194,7 @@ export default function CheckoutPage() {
                   <input
                     required
                     placeholder="Recipient's name"
+                    maxLength={100}
                     value={form.shippingName}
                     onChange={e => setForm({ ...form, shippingName: e.target.value })}
                   />
@@ -203,6 +204,7 @@ export default function CheckoutPage() {
                   <input
                     required
                     placeholder="07X XXX XXXX"
+                    maxLength={30}
                     value={form.shippingPhone}
                     onChange={e => setForm({ ...form, shippingPhone: e.target.value })}
                   />
@@ -214,6 +216,7 @@ export default function CheckoutPage() {
                 <input
                   required
                   placeholder="Apartment, suite, unit, building, street"
+                  maxLength={255}
                   value={form.shippingAddress}
                   onChange={e => setForm({ ...form, shippingAddress: e.target.value })}
                 />
@@ -225,6 +228,7 @@ export default function CheckoutPage() {
                   <input
                     required
                     placeholder="e.g. Colombo, Kandy, Galle"
+                    maxLength={100}
                     value={form.shippingCity}
                     onChange={e => setForm({ ...form, shippingCity: e.target.value })}
                   />
@@ -234,6 +238,7 @@ export default function CheckoutPage() {
                   <input
                     required
                     placeholder="e.g. 00100"
+                    maxLength={20}
                     value={form.shippingPostalCode}
                     onChange={e => setForm({ ...form, shippingPostalCode: e.target.value })}
                   />

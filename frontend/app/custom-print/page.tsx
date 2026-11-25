@@ -321,7 +321,7 @@ function CustomPrintForm() {
                     type="number"
                     min={1}
                     value={quantity}
-                    onChange={e => setQuantity(Math.max(1, Number(e.target.value)))}
+                    onChange={e => setQuantity(Math.min(1000, Math.max(1, Number(e.target.value))))}
                     required
                   />
                 </label>
@@ -332,6 +332,7 @@ function CustomPrintForm() {
                 <textarea
                   rows={4}
                   placeholder="e.g. Infill density requirements, threaded inserts, critical dimensions, or specific surface orientation."
+                  maxLength={2000}
                   value={notes}
                   onChange={e => setNotes(e.target.value)}
                 />

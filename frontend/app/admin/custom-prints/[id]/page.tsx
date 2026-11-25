@@ -201,6 +201,7 @@ export default function AdminCustomPrintDetailPage() {
             <textarea
               rows={3}
               placeholder="e.g. Sliced at 0.16mm layer height with 25% gyroid infill. Tree supports will be cleaned prior to dispatch."
+              maxLength={2000}
               value={adminNotes}
               onChange={e => setAdminNotes(e.target.value)}
               disabled={quoteLocked}

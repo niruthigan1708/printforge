@@ -76,6 +76,7 @@ export default function RegisterPage() {
               <input
                 required
                 placeholder="e.g. Maya Fernando"
+                maxLength={100}
                 value={name}
                 onChange={e => setName(e.target.value)}
               />
@@ -87,6 +88,7 @@ export default function RegisterPage() {
                 required
                 type="email"
                 placeholder="maya@example.com"
+                maxLength={254}
                 value={email}
                 onChange={e => setEmail(e.target.value)}
               />
@@ -99,6 +101,7 @@ export default function RegisterPage() {
                 minLength={8}
                 type="password"
                 placeholder="At least 8 characters"
+                maxLength={72}
                 value={password}
                 onChange={e => setPassword(e.target.value)}
               />
