@@ -42,6 +42,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const savedToken = localStorage.getItem(TOKEN_KEY)
       const savedUser = localStorage.getItem(USER_KEY)
       // Don't restore a session whose token has already expired: every request would fail.
+      // Restoring client-only state after hydration: reading localStorage during render would
+      // make the first client render differ from the server HTML.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (savedToken && savedUser && !isTokenExpired(savedToken)) setUser(JSON.parse(savedUser))
       else if (savedToken || savedUser) clearSession()
     } catch {

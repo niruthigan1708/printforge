@@ -71,6 +71,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     try {
       const saved = localStorage.getItem(CART_KEY)
+      // Restoring the saved cart after hydration (see auth-context for why not during render).
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (saved) setItems(JSON.parse(saved))
     } catch {
       // ignore corrupted local storage
