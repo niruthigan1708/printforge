@@ -2,13 +2,14 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Box, ShoppingBag, Layers, ShieldCheck } from 'lucide-react'
+import { LayoutDashboard, Box, ShoppingBag, Layers, ShieldCheck, Tags } from 'lucide-react'
 import { Header } from '../../components/Header'
 import { RequireAdmin } from '../../lib/guards'
 
 const LINKS = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/products', label: 'Products', icon: Box },
+  { href: '/admin/categories', label: 'Categories', icon: Tags },
   { href: '/admin/orders', label: 'Orders', icon: ShoppingBag },
   { href: '/admin/custom-prints', label: 'Custom Prints', icon: Layers },
 ]
