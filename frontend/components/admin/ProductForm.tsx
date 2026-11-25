@@ -38,7 +38,8 @@ export function ProductForm({ product }: { product?: Product }) {
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [photoFile, setPhotoFile] = useState<File | null>(null)
-  const [photoVersion, setPhotoVersion] = useState(0)
+  // The server bumps imageVersion on every upload, so this always names the current photo.
+  const [imageVersion, setImageVersion] = useState<string | null>(product ? product.imageVersion : null)
   const [photoError, setPhotoError] = useState('')
   const [photoNotice, setPhotoNotice] = useState('')
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
@@ -123,8 +124,8 @@ export function ProductForm({ product }: { product?: Product }) {
     try {
       const form = new FormData()
       form.set('file', photoFile)
-      await api.postForm(`/products/${product.id}/image`, form)
-      setPhotoVersion(v => v + 1)
+      const updated = await api.postForm<Product>(`/products/${product.id}/image`, form)
+      setImageVersion(updated.imageVersion)
       setPhotoFile(null)
       setPhotoNotice('Product photo updated successfully!')
       setTimeout(() => setPhotoNotice(''), 3000)
@@ -163,7 +164,7 @@ export function ProductForm({ product }: { product?: Product }) {
               }}
             >
               <img
-                src={`${productImageUrl(product.id)}${photoVersion ? `?v=${photoVersion}` : ''}`}
+                src={productImageUrl(product.id, imageVersion)}
                 alt={product.name}
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />
