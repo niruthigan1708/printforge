@@ -28,6 +28,10 @@ spring.servlet.multipart:
   max-file-size: 20MB
   max-request-size: 22MB
 app:
+  # Demo accounts/products for local development. Off unless SEED_DEMO_DATA=true; never enable it
+  # in a real deployment (the demo passwords are published in the README).
+  seed:
+    enabled: ${SEED_DEMO_DATA:false}
   upload-dir: ${UPLOAD_DIR:uploads/custom-prints}
   product-image-dir: ${PRODUCT_IMAGE_DIR:uploads/products}
   # Flat delivery fee per order (Rs.). The single source of truth: the shop reads it from

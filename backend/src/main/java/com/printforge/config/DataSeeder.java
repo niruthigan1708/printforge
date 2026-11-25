@@ -5,6 +5,8 @@ import com.printforge.repository.CategoryRepository;
 import com.printforge.repository.ProductRepository;
 import com.printforge.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -15,17 +17,22 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Seeds demo accounts, categories, and products on first boot so the MVP is immediately
- * demonstrable. The plaintext passwords below exist only to be BCrypt-hashed before storage
- * and are documented in the README as demo credentials — never real production secrets.
+ * Seeds demo accounts, categories, and products so a local setup is immediately demonstrable.
+ *
+ * <p>Opt-in only ({@code app.seed.enabled}, env {@code SEED_DEMO_DATA}, default off): the demo
+ * passwords are published in the README, so these accounts must never appear in a real
+ * deployment. Even when enabled, demo accounts are created only in a database with no users at
+ * all; previously the admin was re-created on every startup whenever that email was missing,
+ * so deleting it never helped.
  */
 @Component @RequiredArgsConstructor
 public class DataSeeder implements CommandLineRunner {
+  private static final Logger log = LoggerFactory.getLogger(DataSeeder.class);
   private final UserRepository users;
   private final CategoryRepository categories;
   private final ProductRepository products;
   private final PasswordEncoder encoder;
-  @Value("${app.seed.enabled:true}") private boolean enabled;
+  @Value("${app.seed.enabled:false}") private boolean enabled;
 
   @Override @Transactional
   public void run(String... args) {
@@ -36,22 +43,20 @@ public class DataSeeder implements CommandLineRunner {
   }
 
   private void seedUsers() {
-    if (!users.existsByEmailIgnoreCase("admin@printforge.com")) {
-      User admin = new User();
-      admin.setName("PrintForge Admin");
-      admin.setEmail("admin@printforge.com");
-      admin.setPassword(encoder.encode("Admin@12345"));
-      admin.setRole(Role.ADMIN);
-      users.save(admin);
-    }
-    if (!users.existsByEmailIgnoreCase("customer@printforge.com")) {
-      User customer = new User();
-      customer.setName("Demo Customer");
-      customer.setEmail("customer@printforge.com");
-      customer.setPassword(encoder.encode("Customer@12345"));
-      customer.setRole(Role.CUSTOMER);
-      users.save(customer);
-    }
+    if (users.count() > 0) return; // never add known-password accounts next to real ones
+    log.warn("Creating demo accounts admin@printforge.com and customer@printforge.com with the passwords published in the README. "
+      + "Demo seeding is for local development only; leave SEED_DEMO_DATA unset in any real deployment.");
+    users.save(demoUser("PrintForge Admin", "admin@printforge.com", "Admin@12345", Role.ADMIN));
+    users.save(demoUser("Demo Customer", "customer@printforge.com", "Customer@12345", Role.CUSTOMER));
+  }
+
+  private User demoUser(String name, String email, String password, Role role) {
+    User user = new User();
+    user.setName(name);
+    user.setEmail(email);
+    user.setPassword(encoder.encode(password));
+    user.setRole(role);
+    return user;
   }
 
   private Map<String, Category> seedCategories() {
