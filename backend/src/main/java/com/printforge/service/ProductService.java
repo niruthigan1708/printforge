@@ -1,10 +1,12 @@
 package com.printforge.service;
 
+import com.printforge.dto.ProductDeleteResponse;
 import com.printforge.dto.ProductRequest;
 import com.printforge.dto.ProductResponse;
 import com.printforge.entity.Category;
 import com.printforge.entity.Product;
 import com.printforge.repository.CategoryRepository;
+import com.printforge.repository.OrderItemRepository;
 import com.printforge.repository.ProductRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +22,7 @@ public class ProductService {
   private final ProductRepository products;
   private final CategoryRepository categories;
   private final ProductImageService productImages;
+  private final OrderItemRepository orderItems;
 
   public List<ProductResponse> find(String search, String category) {
     List<Product> result;
@@ -51,10 +54,18 @@ public class ProductService {
   }
 
   @Transactional
-  public void delete(Long id) {
+  public ProductDeleteResponse delete(Long id) {
     Product product = products.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
+    if (orderItems.existsByProduct(product)) {
+      // Order items reference the product, so a hard delete would violate the foreign key.
+      // Archive it instead: hidden from the shop, kept for order history.
+      product.setActive(false);
+      product.setUpdatedAt(Instant.now());
+      return ProductDeleteResponse.archivedInstead();
+    }
     products.delete(product);
     productImages.delete(id);
+    return ProductDeleteResponse.deleted();
   }
 
   private void apply(Product product, ProductRequest request, Category category) {

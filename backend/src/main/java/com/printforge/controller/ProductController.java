@@ -1,5 +1,6 @@
 package com.printforge.controller;
 
+import com.printforge.dto.ProductDeleteResponse;
 import com.printforge.dto.ProductRequest;
 import com.printforge.dto.ProductResponse;
 import com.printforge.service.ProductImageService;
@@ -56,5 +57,5 @@ public class ProductController {
   public ProductResponse update(@PathVariable Long id, @Valid @RequestBody ProductRequest request) { return service.update(id, request); }
 
   @DeleteMapping("/{id}") @PreAuthorize("hasRole('ADMIN')")
-  public void delete(@PathVariable Long id) { service.delete(id); }
+  public ProductDeleteResponse delete(@PathVariable Long id) { return service.delete(id); }
 }
