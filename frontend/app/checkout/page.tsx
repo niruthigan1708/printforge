@@ -6,12 +6,18 @@ import { FormEvent, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Header } from '../../components/Header'
 import { money, type Order } from '../../lib/types'
-import { useCart } from '../../lib/cart-context'
+import { describeCartChanges, useCart } from '../../lib/cart-context'
 import { useAuth } from '../../lib/auth-context'
 import { api, ApiError } from '../../lib/api'
 
 export default function CheckoutPage() {
-  const { items, subtotal, deliveryFee, total, clear } = useCart()
+  const { items, subtotal, deliveryFee, total, clear, refresh, hasUnavailable } = useCart()
+  const [notice, setNotice] = useState('')
+
+  // Never let the customer confirm a total built from stale cart prices.
+  useEffect(() => {
+    refresh().then(result => setNotice(describeCartChanges(result) ?? '')).catch(() => {})
+  }, [refresh])
   const { user, loading } = useAuth()
   const router = useRouter()
   const [order, setOrder] = useState<Order | null>(null)
@@ -36,15 +42,20 @@ export default function CheckoutPage() {
   async function submit(event: FormEvent) {
     event.preventDefault()
     setError('')
+    if (total === null || hasUnavailable) return
     setSubmitting(true)
     try {
       const created = await api.post<Order>('/orders', {
         items: items.map(item => ({ productId: item.productId, quantity: item.quantity })),
         ...form,
+        // The server refuses the order if its total differs from the one shown here.
+        expectedTotal: total,
       })
       clear()
       setOrder(created)
     } catch (err) {
+      // A 409 means prices or stock moved: reload them so the summary shows what would be charged.
+      if (err instanceof ApiError && err.status === 409) refresh().then(result => setNotice(describeCartChanges(result) ?? '')).catch(() => {})
       setError(err instanceof ApiError ? err.message : 'Could not place your order. Please try again.')
     } finally {
       setSubmitting(false)
@@ -262,10 +273,15 @@ export default function CheckoutPage() {
               </div>
             </div>
 
+            {hasUnavailable && (
+              <div className="alert alert-error">
+                Some items are no longer available. <Link href="/cart">Remove them from your cart</Link> to place the order.
+              </div>
+            )}
             <button
               className="btn btn-primary"
               type="submit"
-              disabled={submitting}
+              disabled={submitting || total === null || hasUnavailable}
               style={{ padding: '16px 28px', fontSize: 16 }}
             >
               {submitting ? 'Confirming Order…' : 'Place Order & Start 3D Print'} <ArrowRight size={18} />
@@ -300,12 +316,13 @@ export default function CheckoutPage() {
             </div>
             <div className="summary-line">
               <span>Delivery</span>
-              <b>{deliveryFee === 0 ? <span style={{ color: 'var(--accent-emerald)' }}>FREE</span> : money(deliveryFee)}</b>
+              <b>{deliveryFee === null ? '—' : deliveryFee === 0 ? <span style={{ color: 'var(--accent-emerald)' }}>FREE</span> : money(deliveryFee)}</b>
             </div>
             <div className="summary-total">
               <span>Total</span>
-              <span style={{ color: 'var(--accent-primary)' }}>{money(total)}</span>
+              <span style={{ color: 'var(--accent-primary)' }}>{total === null ? '—' : money(total)}</span>
             </div>
+            {notice && <div className="alert alert-success" style={{ marginTop: 12 }}>{notice}</div>}
 
             <Link href="/cart" className="section-note" style={{ justifyContent: 'center', display: 'flex' }}>
               <ArrowLeft size={14} /> Back to Edit Cart
