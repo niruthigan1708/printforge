@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
+import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -66,6 +67,7 @@ public class CustomPrintService {
     CustomPrintRequest request = requests.findByIdAndCustomer(id, user).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Custom print request not found"));
     if (request.getStatus() != RequestStatus.QUOTED) throw new ResponseStatusException(HttpStatus.CONFLICT, "Only a quoted request can be accepted");
     request.setStatus(RequestStatus.ACCEPTED);
+    request.setUpdatedAt(Instant.now());
     return CustomPrintRequestResponse.from(request);
   }
 
@@ -75,6 +77,7 @@ public class CustomPrintService {
     CustomPrintRequest request = requests.findByIdAndCustomer(id, user).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Custom print request not found"));
     if (request.getStatus() != RequestStatus.QUOTED) throw new ResponseStatusException(HttpStatus.CONFLICT, "Only a quoted request can be rejected");
     request.setStatus(RequestStatus.REJECTED);
+    request.setUpdatedAt(Instant.now());
     return CustomPrintRequestResponse.from(request);
   }
 
@@ -93,22 +96,30 @@ public class CustomPrintService {
   @Transactional
   public CustomPrintRequestResponse quote(Long id, QuoteRequest quoteRequest) {
     CustomPrintRequest request = findEntity(id);
-    if (request.getStatus() == RequestStatus.CANCELLED || request.getStatus() == RequestStatus.COMPLETED) {
+    if (!request.getStatus().canBeQuoted()) {
+      // Once the customer has accepted or rejected, re-quoting would silently undo their answer.
       throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot quote a request that is already " + request.getStatus());
     }
     request.setAdminQuote(quoteRequest.amount());
     request.setAdminNotes(quoteRequest.notes());
     request.setStatus(RequestStatus.QUOTED);
+    request.setUpdatedAt(Instant.now());
     return CustomPrintRequestResponse.from(request);
   }
 
   @Transactional
   public CustomPrintRequestResponse updateStatus(Long id, RequestStatus status) {
     CustomPrintRequest request = findEntity(id);
-    if (request.getStatus() == RequestStatus.COMPLETED || request.getStatus() == RequestStatus.CANCELLED) {
-      throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot change the status of a " + request.getStatus() + " request");
+    RequestStatus current = request.getStatus();
+    if (current == status) return CustomPrintRequestResponse.from(request);
+    if (current.isTerminal()) throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot change the status of a " + current + " request");
+    if (status == RequestStatus.QUOTED) throw new ResponseStatusException(HttpStatus.CONFLICT, "Use the quote action to send a price; it sets the request to QUOTED");
+    if (status == RequestStatus.ACCEPTED || status == RequestStatus.REJECTED) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "Only the customer can accept or reject a quote");
     }
+    if (!current.adminCanTransitionTo(status)) throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot move a request from " + current + " to " + status);
     request.setStatus(status);
+    request.setUpdatedAt(Instant.now());
     return CustomPrintRequestResponse.from(request);
   }
 }
