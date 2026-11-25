@@ -1,8 +1,11 @@
 package com.printforge.repository;
 
 import com.printforge.entity.CustomPrintRequest;
+import com.printforge.entity.RequestStatus;
 import com.printforge.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -10,4 +13,7 @@ public interface CustomPrintRequestRepository extends JpaRepository<CustomPrintR
   List<CustomPrintRequest> findByCustomerOrderByCreatedAtDesc(User customer);
   Optional<CustomPrintRequest> findByIdAndCustomer(Long id, User customer);
   List<CustomPrintRequest> findTop5ByOrderByCreatedAtDesc();
+
+  /** Closed requests, untouched since {@code cutoff}, whose model file has not been purged yet. */
+  List<CustomPrintRequest> findByStatusInAndUpdatedAtBeforeAndFilePurgedAtIsNull(Collection<RequestStatus> statuses, Instant cutoff);
 }

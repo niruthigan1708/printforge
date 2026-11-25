@@ -25,4 +25,6 @@ public class CustomPrintRequest {
   @Column(length = 2000) private String adminNotes;
   private Instant createdAt = Instant.now();
   private Instant updatedAt = Instant.now();
+  /** Set when the retention job deleted the model file of this closed request; null while kept. */
+  @Column(name = "file_purged_at") private Instant filePurgedAt;
 }
