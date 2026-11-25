@@ -24,10 +24,12 @@ export default function AdminProductsPage() {
   useEffect(load, [])
 
   async function remove(product: Product) {
-    if (!confirm(`Are you sure you want to delete "${product.name}"? This action cannot be undone.`)) return
+    if (!confirm(`Delete "${product.name}"? If it appears in past orders it will be archived (hidden from the shop) instead.`)) return
     try {
-      await api.del(`/products/${product.id}`)
-      setNotice(`"${product.name}" was successfully deleted.`)
+      const result = await api.del<{ archived: boolean; message: string }>(`/products/${product.id}`)
+      setNotice(result?.archived
+        ? `"${product.name}" has existing orders, so it was archived and hidden from the shop.`
+        : `"${product.name}" was successfully deleted.`)
       setTimeout(() => setNotice(''), 3000)
       load()
     } catch (err) {
