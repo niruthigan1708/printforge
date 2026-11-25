@@ -163,12 +163,17 @@ export default function AdminCustomPrintDetailPage() {
 
         <button
           className="btn secondary"
-          disabled={downloading}
+          disabled={downloading || !request.fileAvailable}
           onClick={downloadFile}
           style={{ width: 'max-content' }}
         >
           <Download size={16} /> {downloading ? 'Downloading CAD File…' : 'Download Model File (.STL/.3MF/.OBJ)'}
         </button>
+        {!request.fileAvailable && (
+          <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 8 }}>
+            The model file was deleted automatically some time after this request was closed.
+          </p>
+        )}
       </div>
 
       {/* Quote Generation Card */}

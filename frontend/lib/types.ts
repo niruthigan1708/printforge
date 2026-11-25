@@ -72,6 +72,8 @@ export type CustomPrintRequest = {
   canQuote: boolean
   /** True while the customer may still withdraw this request themselves. */
   canCancel: boolean
+  /** False once the model file of this closed request has been deleted by the retention job. */
+  fileAvailable: boolean
 }
 
 /** One page of a server-paged list (admin orders, products, custom prints). `page` is zero-based. */
