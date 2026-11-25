@@ -24,3 +24,6 @@ spring.servlet.multipart:
 app:
   upload-dir: ${UPLOAD_DIR:uploads/custom-prints}
   product-image-dir: ${PRODUCT_IMAGE_DIR:uploads/products}
+  # Flat delivery fee per order (Rs.). The single source of truth: the shop reads it from
+  # GET /api/shop/settings instead of hardcoding its own copy.
+  delivery-fee: ${DELIVERY_FEE:350}

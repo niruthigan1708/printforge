@@ -21,7 +21,7 @@ public class SecurityConfig {
     return http.csrf(csrf -> csrf.disable()).cors(cors -> {}).sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
       .authorizeHttpRequests(auth -> auth
         .requestMatchers("/api/auth/**").permitAll()
-        .requestMatchers(HttpMethod.GET, "/api/products/**", "/api/categories/**").permitAll()
+        .requestMatchers(HttpMethod.GET, "/api/products/**", "/api/categories/**", "/api/shop/**").permitAll()
         .requestMatchers("/api/admin/**").hasRole("ADMIN")
         .anyRequest().authenticated())
       .exceptionHandling(handling -> handling

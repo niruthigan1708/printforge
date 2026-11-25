@@ -135,6 +135,7 @@ See [`.env.example`](.env.example). The backend loads `backend/.env` automatical
 | `JWT_EXPIRATION` | backend | Token lifetime in ms (default 24h) |
 | `UPLOAD_DIR` | backend | Where custom-print uploads are stored (default `backend/uploads/custom-prints`) |
 | `PRODUCT_IMAGE_DIR` | backend | Where uploaded product photos are stored (default `backend/uploads/products`) |
+| `DELIVERY_FEE` | backend | Flat delivery fee per order in Rs. (default `350`). The storefront reads it from `GET /api/shop/settings` |
 | `NEXT_PUBLIC_API_URL` | frontend | Base URL the browser calls (default `http://localhost:8080/api`) |
 
 ## Demo Accounts

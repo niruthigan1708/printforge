@@ -1,5 +1,6 @@
 package com.printforge.service;
 
+import com.printforge.config.ShopSettings;
 import com.printforge.dto.*;
 import com.printforge.entity.*;
 import com.printforge.repository.*;
@@ -17,7 +18,7 @@ import java.util.UUID;
 
 @Service @RequiredArgsConstructor
 public class OrderService {
-  private final OrderRepository orders; private final UserRepository users; private final ProductRepository products;
+  private final OrderRepository orders; private final UserRepository users; private final ProductRepository products; private final ShopSettings shopSettings;
 
   @Transactional public OrderResponse create(String email, CreateOrderRequest request) {
     User customer = users.findByEmailIgnoreCase(email).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
@@ -38,7 +39,7 @@ public class OrderService {
       product.setStockQuantity(product.getStockQuantity() - quantity);
       OrderItem item = new OrderItem(); item.setOrder(order); item.setProduct(product); item.setProductName(product.getName()); item.setQuantity(quantity); item.setUnitPrice(product.getPrice()); item.setSubtotal(product.getPrice().multiply(BigDecimal.valueOf(quantity))); order.getItems().add(item); subtotal = subtotal.add(item.getSubtotal());
     }
-    order.setSubtotal(subtotal); order.setDeliveryFee(BigDecimal.valueOf(350)); order.setTotalAmount(subtotal.add(order.getDeliveryFee())); order.setShippingName(request.shippingName()); order.setShippingPhone(request.shippingPhone()); order.setShippingAddress(request.shippingAddress()); order.setShippingCity(request.shippingCity()); order.setShippingPostalCode(request.shippingPostalCode());
+    order.setSubtotal(subtotal); order.setDeliveryFee(shopSettings.deliveryFee()); order.setTotalAmount(subtotal.add(order.getDeliveryFee())); order.setShippingName(request.shippingName()); order.setShippingPhone(request.shippingPhone()); order.setShippingAddress(request.shippingAddress()); order.setShippingCity(request.shippingCity()); order.setShippingPostalCode(request.shippingPostalCode());
     order = orders.saveAndFlush(order);
     order.setOrderNumber(orderNumberFor(order.getId()));
     return OrderResponse.from(order);
