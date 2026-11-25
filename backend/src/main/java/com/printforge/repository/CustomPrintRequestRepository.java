@@ -10,4 +10,5 @@ public interface CustomPrintRequestRepository extends JpaRepository<CustomPrintR
   List<CustomPrintRequest> findByCustomerOrderByCreatedAtDesc(User customer);
   Optional<CustomPrintRequest> findByIdAndCustomer(Long id, User customer);
   List<CustomPrintRequest> findAllByOrderByCreatedAtDesc();
+  List<CustomPrintRequest> findTop5ByOrderByCreatedAtDesc();
 }
