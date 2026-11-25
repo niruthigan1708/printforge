@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Header } from '../../components/Header'
 import { useAuth } from '../../lib/auth-context'
 import { ApiError } from '../../lib/api'
+import { safeRedirect } from '../../lib/safe-redirect'
 
 function LoginPageInner() {
   const { login } = useAuth()
@@ -23,7 +24,7 @@ function LoginPageInner() {
     setSubmitting(true)
     try {
       await login(email, password)
-      router.push(searchParams.get('redirect') || '/')
+      router.push(safeRedirect(searchParams.get('redirect')))
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Invalid credentials. Please check and try again.')
     } finally {
