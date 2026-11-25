@@ -84,7 +84,7 @@ Order and request responses include `nextStatuses` — the moves the server will
 
 ## Authentication
 
-JWT bearer tokens, BCrypt password hashing. Public registration always creates a `CUSTOMER` — there is no way to self-register as `ADMIN`. Every protected endpoint checks the role embedded in the verified JWT server-side (Spring Security), never a role sent by the client. Invalid/expired/missing tokens return `401`; valid tokens without the right role return `403`.
+JWT bearer tokens, BCrypt password hashing. Public registration always creates a `CUSTOMER` — there is no way to self-register as `ADMIN`. A token only identifies the user: on every request the server re-reads the account and takes the role from the database (never from the token or the client), so a role change applies immediately and a deleted account stops working. Each token carries the user's token version; logging out (`POST /api/auth/logout`) bumps it, revoking all of that user's tokens on every device. Invalid, expired, revoked or missing tokens return `401`; valid tokens without the right role return `403`.
 
 ## API Endpoints
 
@@ -92,6 +92,7 @@ JWT bearer tokens, BCrypt password hashing. Public registration always creates a
 |---|---|---|---|
 | POST | `/api/auth/register` | Public | Register (always `CUSTOMER`) |
 | POST | `/api/auth/login` | Public | Log in, returns `{token, id, name, email, role}` |
+| POST | `/api/auth/logout` | Authenticated | Revoke all of the caller's tokens (every device); `204` |
 | GET | `/api/products` | Public | List active products (`?search=` and `?category=` combine; `?ids=1,2,3` returns just those, max 100) |
 | GET | `/api/products/{id}` | Public | Product detail (404 for inactive/archived products) |
 | GET | `/api/admin/products/{id}` | ADMIN | Product detail including inactive products |
