@@ -1441,6 +1441,12 @@ tr:hover td {
   margin-bottom: 28px;
 }
 
+/* Stacked dashboard blocks (e.g. Recent Orders, Recent Custom Prints) need breathing room;
+   without this the second heading sat directly against the first table. */
+.admin-section + .admin-section {
+  margin-top: 40px;
+}
+
 .dashboard-cards {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
