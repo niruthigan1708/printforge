@@ -23,5 +23,11 @@ public class Product {
   private boolean active = true;
   private Instant createdAt = Instant.now();
   private Instant updatedAt = Instant.now();
+  /**
+   * Bumped by every admin change to the product's details (form saves, archiving) but not by
+   * orders changing stock, so an editor can detect another admin's save without sales getting in
+   * the way. Stock has its own check (see ProductService.applyStock).
+   */
+  @Column(name = "edit_version", nullable = false) private long editVersion;
   @ManyToOne(optional = false) private Category category;
 }
