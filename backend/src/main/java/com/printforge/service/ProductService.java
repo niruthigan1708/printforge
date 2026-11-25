@@ -25,9 +25,12 @@ public class ProductService {
   private final OrderItemRepository orderItems;
 
   public List<ProductResponse> find(String search, String category) {
+    boolean hasSearch = search != null && !search.isBlank();
+    boolean hasCategory = category != null && !category.isBlank();
     List<Product> result;
-    if (search != null && !search.isBlank()) result = products.findByActiveTrueAndNameContainingIgnoreCaseOrderByCreatedAtDesc(search);
-    else if (category != null && !category.isBlank()) result = products.findByActiveTrueAndCategory_NameIgnoreCaseOrderByCreatedAtDesc(category);
+    if (hasSearch && hasCategory) result = products.findByActiveTrueAndNameContainingIgnoreCaseAndCategory_NameIgnoreCaseOrderByCreatedAtDesc(search.trim(), category.trim());
+    else if (hasSearch) result = products.findByActiveTrueAndNameContainingIgnoreCaseOrderByCreatedAtDesc(search.trim());
+    else if (hasCategory) result = products.findByActiveTrueAndCategory_NameIgnoreCaseOrderByCreatedAtDesc(category.trim());
     else result = products.findByActiveTrueOrderByCreatedAtDesc();
     return result.stream().map(ProductResponse::from).toList();
   }

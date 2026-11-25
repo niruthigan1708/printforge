@@ -10,5 +10,6 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
   List<Product> findAllByOrderByCreatedAtDesc();
   List<Product> findByActiveTrueAndNameContainingIgnoreCaseOrderByCreatedAtDesc(String search);
   List<Product> findByActiveTrueAndCategory_NameIgnoreCaseOrderByCreatedAtDesc(String category);
+  List<Product> findByActiveTrueAndNameContainingIgnoreCaseAndCategory_NameIgnoreCaseOrderByCreatedAtDesc(String search, String category);
   boolean existsByCategory(Category category);
 }
