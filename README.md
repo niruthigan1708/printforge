@@ -162,6 +162,7 @@ See [`.env.example`](.env.example). The backend loads `backend/.env` automatical
 | `DELIVERY_FEE` | backend | Flat delivery fee per order in Rs. (default `350`). The storefront reads it from `GET /api/shop/settings` |
 | `FREE_DELIVERY_THRESHOLD` | backend | Orders with a subtotal at or above this ship free (default `5000`); `0` switches free delivery off |
 | `MAX_FAILED_LOGINS_PER_ACCOUNT`, `MAX_FAILED_LOGINS_PER_IP`, `LOGIN_LOCKOUT_WINDOW` | backend | Login throttling (defaults `5`, `20`, `15m`): after that many failed logins within the window, further attempts get `429` with `Retry-After` |
+| `FORWARD_HEADERS_STRATEGY`, `TRUSTED_PROXIES` | backend | Behind a reverse proxy the client IP comes from `X-Forwarded-For` (default `native`), honoured only from trusted proxy addresses (default: private and loopback ranges, as a CIDR list). Set `TRUSTED_PROXIES` if your load balancer has a public address, or `FORWARD_HEADERS_STRATEGY=none` if nothing sits in front of the app |
 | `CORS_ALLOWED_ORIGINS` | backend | Comma-separated origins the browser may call the API from (default `http://localhost:3000`); set to your deployed frontend URL |
 | `NEXT_PUBLIC_API_URL` | frontend | Base URL the browser calls (default `http://localhost:8080/api`) |
 
