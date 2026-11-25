@@ -40,6 +40,13 @@ public class OrderService {
       OrderItem item = new OrderItem(); item.setOrder(order); item.setProduct(product); item.setProductName(product.getName()); item.setQuantity(quantity); item.setUnitPrice(product.getPrice()); item.setSubtotal(product.getPrice().multiply(BigDecimal.valueOf(quantity))); order.getItems().add(item); subtotal = subtotal.add(item.getSubtotal());
     }
     order.setSubtotal(subtotal); order.setDeliveryFee(shopSettings.deliveryFee()); order.setTotalAmount(subtotal.add(order.getDeliveryFee())); order.setShippingName(request.shippingName()); order.setShippingPhone(request.shippingPhone()); order.setShippingAddress(request.shippingAddress()); order.setShippingCity(request.shippingCity()); order.setShippingPostalCode(request.shippingPostalCode());
+    // The cart shows prices saved when items were added. If a price or the delivery fee changed
+    // since, refuse rather than charge a different amount than the customer agreed to. Throwing
+    // rolls back the stock deducted above.
+    if (request.expectedTotal() != null && request.expectedTotal().compareTo(order.getTotalAmount()) != 0) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "Prices have changed since you loaded your cart. Your new total is "
+        + order.getTotalAmount().setScale(2, java.math.RoundingMode.HALF_UP) + "; please review your cart and place the order again.");
+    }
     order = orders.saveAndFlush(order);
     order.setOrderNumber(orderNumberFor(order.getId()));
     return OrderResponse.from(order);
