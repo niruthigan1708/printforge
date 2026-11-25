@@ -126,6 +126,10 @@ Demo data (8 categories, 15 products, 1 admin, 1 customer) seeds automatically o
 
 **Run backend tests:** `cd backend && mvn test` (uses an in-memory H2 database, no PostgreSQL required).
 
+**Lint the frontend:** `cd frontend && npm run lint`.
+
+**Continuous integration:** `.github/workflows/ci.yml` runs the backend tests and the frontend lint, type-check and production build on every push to `main` and every pull request.
+
 > **Why `printforge` and not `campusconnect`?** The environment's `campusconnect` database already holds an unrelated project's tables and a `users.role` check constraint incompatible with PrintForge's `CUSTOMER`/`ADMIN` roles. PrintForge uses its own dedicated database to avoid corrupting that project.
 
 ## Environment Variables
