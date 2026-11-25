@@ -33,6 +33,9 @@ public class AdminCustomPrintController {
   @GetMapping("/{id}/file")
   public ResponseEntity<Resource> file(@PathVariable Long id) {
     CustomPrintRequest request = service.findEntity(id);
+    if (request.getFilePurgedAt() != null) {
+      throw new ResponseStatusException(HttpStatus.GONE, "The model file was deleted after this request was closed (" + request.getStatus() + ")");
+    }
     Path path = fileStorage.locate(request.getFilePath())
       .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "The uploaded model file is no longer available on the server"));
     // Built with ContentDisposition so quotes, semicolons and non-ASCII characters in the
