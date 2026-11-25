@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react'
 import { CheckCircle2, Clock } from 'lucide-react'
 import { StatusBadge } from '../../../components/StatusBadge'
 import { api, ApiError } from '../../../lib/api'
-import { money, type Order, type OrderStatus } from '../../../lib/types'
+import { money, type Order, type OrderStatus, type Page } from '../../../lib/types'
+import { Pagination } from '../../../components/Pagination'
 
 
 export default function AdminOrdersPage() {
@@ -14,15 +15,16 @@ export default function AdminOrdersPage() {
   const [notice, setNotice] = useState('')
   const [updatingId, setUpdatingId] = useState<number | null>(null)
 
-  function load() {
+  const [pageNumber, setPageNumber] = useState(0)
+  const [pageInfo, setPageInfo] = useState<Page<Order> | null>(null)
+
+  useEffect(() => {
     setLoading(true)
-    api.get<Order[]>('/admin/orders')
-      .then(setOrders)
+    api.get<Page<Order>>(`/admin/orders?page=${pageNumber}&size=20`)
+      .then(result => { setPageInfo(result); setOrders(result.content) })
       .catch(err => setError(err instanceof ApiError ? err.message : 'Could not load orders.'))
       .finally(() => setLoading(false))
-  }
-
-  useEffect(load, [])
+  }, [pageNumber])
 
   async function updateStatus(order: Order, status: OrderStatus) {
     // Orders only move forward, so a mistaken change cannot be reverted.
@@ -130,6 +132,7 @@ export default function AdminOrdersPage() {
           </table>
         </div>
       )}
+      <Pagination page={pageInfo} onChange={setPageNumber} />
     </>
   )
 }

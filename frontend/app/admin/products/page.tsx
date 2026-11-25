@@ -1,10 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Trash2, Edit, Plus, Box } from 'lucide-react'
 import { api, ApiError, productImageUrl } from '../../../lib/api'
-import { money, type Product } from '../../../lib/types'
+import { money, type Page, type Product } from '../../../lib/types'
+import { Pagination } from '../../../components/Pagination'
 import { placeholderImage } from '../../../lib/placeholder'
 
 export default function AdminProductsPage() {
@@ -13,15 +14,23 @@ export default function AdminProductsPage() {
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
 
-  function load() {
+  const [pageNumber, setPageNumber] = useState(0)
+  const [pageInfo, setPageInfo] = useState<Page<Product> | null>(null)
+
+  const load = useCallback(() => {
     setLoading(true)
-    api.get<Product[]>('/admin/products')
-      .then(setProducts)
+    api.get<Page<Product>>(`/admin/products?page=${pageNumber}&size=20`)
+      .then(result => {
+        // Deleting the last item on the last page leaves it empty; step back a page.
+        if (result.content.length === 0 && result.page > 0) { setPageNumber(result.page - 1); return }
+        setPageInfo(result)
+        setProducts(result.content)
+      })
       .catch(err => setError(err instanceof ApiError ? err.message : 'Could not load products.'))
       .finally(() => setLoading(false))
-  }
+  }, [pageNumber])
 
-  useEffect(load, [])
+  useEffect(load, [load])
 
   async function remove(product: Product) {
     if (!confirm(`Delete "${product.name}"? If it appears in past orders it will be archived (hidden from the shop) instead.`)) return
@@ -142,6 +151,7 @@ export default function AdminProductsPage() {
           </table>
         </div>
       )}
+      <Pagination page={pageInfo} onChange={setPageNumber} />
     </>
   )
 }

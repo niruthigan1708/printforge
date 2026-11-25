@@ -5,19 +5,24 @@ import { useEffect, useState } from 'react'
 import { ArrowRight, FileCode, Layers } from 'lucide-react'
 import { StatusBadge } from '../../../components/StatusBadge'
 import { api, ApiError } from '../../../lib/api'
-import type { CustomPrintRequest } from '../../../lib/types'
+import type { CustomPrintRequest, Page } from '../../../lib/types'
+import { Pagination } from '../../../components/Pagination'
 
 export default function AdminCustomPrintsPage() {
   const [requests, setRequests] = useState<CustomPrintRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
+  const [pageNumber, setPageNumber] = useState(0)
+  const [pageInfo, setPageInfo] = useState<Page<CustomPrintRequest> | null>(null)
+
   useEffect(() => {
-    api.get<CustomPrintRequest[]>('/admin/custom-prints')
-      .then(setRequests)
+    setLoading(true)
+    api.get<Page<CustomPrintRequest>>(`/admin/custom-prints?page=${pageNumber}&size=20`)
+      .then(result => { setPageInfo(result); setRequests(result.content) })
       .catch(err => setError(err instanceof ApiError ? err.message : 'Could not load custom requests.'))
       .finally(() => setLoading(false))
-  }, [])
+  }, [pageNumber])
 
   return (
     <>
@@ -95,6 +100,7 @@ export default function AdminCustomPrintsPage() {
           </table>
         </div>
       )}
+      <Pagination page={pageInfo} onChange={setPageNumber} />
     </>
   )
 }
