@@ -76,14 +76,16 @@ JWT bearer tokens, BCrypt password hashing. Public registration always creates a
 |---|---|---|---|
 | POST | `/api/auth/register` | Public | Register (always `CUSTOMER`) |
 | POST | `/api/auth/login` | Public | Log in, returns `{token, id, name, email, role}` |
-| GET | `/api/products` | Public | List products (`?search=`, `?category=`) |
-| GET | `/api/products/{id}` | Public | Product detail |
-| GET | `/api/products/{id}/image` | Public | Product photo — serves the uploaded file, else redirects to the admin-set image URL, else a generated placeholder |
+| GET | `/api/products` | Public | List active products (`?search=` and `?category=` combine; `?ids=1,2,3` returns just those, max 100) |
+| GET | `/api/products/{id}` | Public | Product detail (404 for inactive/archived products) |
+| GET | `/api/admin/products/{id}` | ADMIN | Product detail including inactive products |
+| GET | `/api/products/{id}/image` | Public | Product photo — serves the uploaded file, else redirects to the admin-set image URL, else a generated placeholder. Pass `?v=<imageVersion>` for a long-cached URL; unversioned requests are revalidated |
 | POST | `/api/products/{id}/image` | ADMIN | Upload/replace a product's photo (multipart: `file`, max 5MB, JPG/PNG/WEBP/GIF) |
 | POST/PUT/DELETE | `/api/products[/{id}]` | ADMIN | Manage products |
 | GET | `/api/categories` | Public | List categories |
+| GET | `/api/shop/settings` | Public | `{ deliveryFee, freeDeliveryThreshold }` used to price orders |
 | POST/PUT/DELETE | `/api/categories[/{id}]` | ADMIN | Manage categories (delete blocked if products reference it) |
-| POST | `/api/orders` | CUSTOMER | Place an order (validates stock, transactional) |
+| POST | `/api/orders` | CUSTOMER | Place an order (validates stock, transactional). Optional `expectedTotal`: rejected with `409` if prices changed since the customer saw it |
 | GET | `/api/orders` / `/api/orders/{id}` | CUSTOMER | Own orders only |
 | GET | `/api/admin/orders` | ADMIN | All orders |
 | PUT | `/api/admin/orders/{id}/status` | ADMIN | Update order status |
