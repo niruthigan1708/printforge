@@ -119,7 +119,7 @@ Demo data (8 categories, 15 products, 1 admin, 1 customer) seeds automatically o
 
 ## Environment Variables
 
-See [`.env.example`](.env.example). Never commit a real `.env` — both `backend/.env` and `frontend/.env.local` are gitignored.
+See [`.env.example`](.env.example). The backend loads `backend/.env` automatically on startup (via `spring.config.import`), so no shell exports are needed; real environment variables take precedence over it. Never commit a real `.env` — both `backend/.env` and `frontend/.env.local` are gitignored.
 
 | Variable | Used by | Purpose |
 |---|---|---|
