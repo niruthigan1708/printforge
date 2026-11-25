@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { Download, ArrowLeft, FileCode, CheckCircle2, DollarSign, Send } from 'lucide-react'
 import { StatusBadge } from '../../../../components/StatusBadge'
-import { api, ApiError, API_URL, getToken } from '../../../../lib/api'
+import { api, ApiError } from '../../../../lib/api'
 import { money, type CustomPrintRequest, type RequestStatus } from '../../../../lib/types'
 
 export default function AdminCustomPrintDetailPage() {
@@ -68,15 +68,8 @@ export default function AdminCustomPrintDetailPage() {
     if (!request) return
     setDownloading(true)
     try {
-      const res = await fetch(`${API_URL}/admin/custom-prints/${request.id}/file`, {
-        headers: { Authorization: `Bearer ${getToken()}` },
-      })
-      if (!res.ok) {
-        // Surface the server's reason (e.g. the file is no longer on the server).
-        const body = await res.json().catch(() => null)
-        throw new Error(body?.message || 'Could not download the 3D file.')
-      }
-      const blob = await res.blob()
+      // Sent with the session cookie; errors carry the server's reason (e.g. the file was purged).
+      const blob = await api.download(`/admin/custom-prints/${request.id}/file`)
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
