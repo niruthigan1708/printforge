@@ -9,6 +9,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import java.lang.reflect.Field;
 import java.util.List;
 
@@ -23,7 +25,7 @@ class DataSeederTest {
   private final ProductRepository products = mock(ProductRepository.class);
 
   private DataSeeder seeder(boolean enabled) {
-    DataSeeder seeder = new DataSeeder(users, categories, products, new BCryptPasswordEncoder(4));
+    DataSeeder seeder = new DataSeeder(users, categories, products, new BCryptPasswordEncoder(4), new TransactionTemplate(mock(PlatformTransactionManager.class)));
     ReflectionTestUtils.setField(seeder, "enabled", enabled);
     when(categories.count()).thenReturn(1L);
     when(products.count()).thenReturn(1L);
@@ -37,13 +39,13 @@ class DataSeederTest {
   }
 
   @Test void disabledSeederCreatesNothing() {
-    seeder(false).run();
+    seeder(false).afterSingletonsInstantiated();
     verifyNoInteractions(users, categories, products);
   }
 
   @Test void demoAccountsAreNotAddedToADatabaseThatHasUsers() {
     when(users.count()).thenReturn(3L);
-    seeder(true).run();
+    seeder(true).afterSingletonsInstantiated();
     verify(users, never()).save(any());
   }
 
@@ -51,13 +53,13 @@ class DataSeederTest {
     // The old seeder re-created admin@printforge.com on every start whenever that email was missing.
     when(users.count()).thenReturn(1L);
     when(users.existsByEmailIgnoreCase("admin@printforge.com")).thenReturn(false);
-    seeder(true).run();
+    seeder(true).afterSingletonsInstantiated();
     verify(users, never()).save(any());
   }
 
   @Test void emptyDatabaseGetsBothDemoAccountsWhenEnabled() {
     when(users.count()).thenReturn(0L);
-    seeder(true).run();
+    seeder(true).afterSingletonsInstantiated();
     ArgumentCaptor<User> saved = ArgumentCaptor.forClass(User.class);
     verify(users, times(2)).save(saved.capture());
     List<User> created = saved.getAllValues();

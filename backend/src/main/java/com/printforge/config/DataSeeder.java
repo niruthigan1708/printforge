@@ -8,10 +8,10 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.CommandLineRunner;
+import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import java.math.BigDecimal;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -24,22 +24,29 @@ import java.util.Map;
  * deployment. Even when enabled, demo accounts are created only in a database with no users at
  * all; previously the admin was re-created on every startup whenever that email was missing,
  * so deleting it never helped.
+ *
+ * <p>Seeding runs once every bean exists (so Flyway has migrated) but before the web server
+ * starts accepting connections. As a CommandLineRunner it ran after the server was already up,
+ * so the first requests could see an empty catalogue or fail to log in with the demo accounts.
  */
 @Component @RequiredArgsConstructor
-public class DataSeeder implements CommandLineRunner {
+public class DataSeeder implements SmartInitializingSingleton {
   private static final Logger log = LoggerFactory.getLogger(DataSeeder.class);
   private final UserRepository users;
   private final CategoryRepository categories;
   private final ProductRepository products;
   private final PasswordEncoder encoder;
+  private final TransactionTemplate transaction;
   @Value("${app.seed.enabled:false}") private boolean enabled;
 
-  @Override @Transactional
-  public void run(String... args) {
+  @Override
+  public void afterSingletonsInstantiated() {
     if (!enabled) return;
-    seedUsers();
-    Map<String, Category> categoryByName = seedCategories();
-    seedProducts(categoryByName);
+    transaction.executeWithoutResult(status -> {
+      seedUsers();
+      Map<String, Category> categoryByName = seedCategories();
+      seedProducts(categoryByName);
+    });
   }
 
   private void seedUsers() {
