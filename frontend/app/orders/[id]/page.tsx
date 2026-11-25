@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Clock, MapPin, PackageCheck, Truck } from 'lucide-react'
+import { ArrowLeft, Clock, MapPin, PackageCheck, Truck, XCircle } from 'lucide-react'
 import { Header } from '../../../components/Header'
 import { StatusBadge } from '../../../components/StatusBadge'
 import { OrderTracker } from '../../../components/OrderTracker'
@@ -15,6 +15,21 @@ function OrderDetail() {
   const params = useParams<{ id: string }>()
   const [order, setOrder] = useState<Order | null>(null)
   const [error, setError] = useState('')
+  const [cancelling, setCancelling] = useState(false)
+  const [cancelError, setCancelError] = useState('')
+
+  async function cancel() {
+    if (!order || !confirm(`Cancel order ${order.orderNumber}? This cannot be undone.`)) return
+    setCancelling(true)
+    setCancelError('')
+    try {
+      setOrder(await api.put<Order>(`/orders/${order.id}/cancel`))
+    } catch (err) {
+      setCancelError(err instanceof ApiError ? err.message : 'Could not cancel this order.')
+    } finally {
+      setCancelling(false)
+    }
+  }
 
   useEffect(() => {
     api.get<Order>(`/orders/${params.id}`)
@@ -94,6 +109,17 @@ function OrderDetail() {
           </div>
 
           <OrderTracker status={order.status} />
+
+          {/* The server decides whether the order can still be cancelled (only while PENDING). */}
+          {order.canCancel && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 20, flexWrap: 'wrap' }}>
+              <button className="btn secondary" disabled={cancelling} onClick={cancel}>
+                <XCircle size={16} /> {cancelling ? 'Cancelling…' : 'Cancel Order'}
+              </button>
+              <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>You can cancel until the studio confirms your order.</span>
+            </div>
+          )}
+          {cancelError && <div className="alert alert-error" style={{ marginTop: 16 }}>{cancelError}</div>}
         </div>
 
         {/* Order Details Grid */}

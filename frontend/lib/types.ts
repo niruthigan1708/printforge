@@ -44,6 +44,8 @@ export type Order = {
   items: OrderItem[]
   /** Statuses the server will accept as the next move for this order. */
   nextStatuses: OrderStatus[]
+  /** True while the customer may still cancel this order themselves. */
+  canCancel: boolean
 }
 
 export type CustomPrintRequest = {
@@ -66,6 +68,8 @@ export type CustomPrintRequest = {
   nextStatuses: RequestStatus[]
   /** Whether a quote can still be sent or revised (only until the customer answers). */
   canQuote: boolean
+  /** True while the customer may still withdraw this request themselves. */
+  canCancel: boolean
 }
 
 export type DashboardSummary = {
