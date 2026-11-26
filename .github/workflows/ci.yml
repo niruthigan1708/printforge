@@ -54,3 +54,108 @@ jobs:
         run: npm run build
         env:
           NEXT_PUBLIC_API_URL: http://localhost:8080/api
+
+  backend-postgres:
+    name: Backend (tests on PostgreSQL)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: printforge_test
+          POSTGRES_USER: printforge
+          POSTGRES_PASSWORD: printforge
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U printforge" --health-interval 5s --health-timeout 5s --health-retries 10
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      # Same suite as above, but against the real database engine and its Flyway migrations.
+      - name: Run tests
+        run: mvn -B -ntp verify
+        env:
+          TEST_DATABASE_URL: jdbc:postgresql://localhost:5432/printforge_test
+          TEST_DATABASE_USERNAME: printforge
+          TEST_DATABASE_PASSWORD: printforge
+
+  e2e:
+    name: End-to-end (browser)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: printforge
+          POSTGRES_USER: printforge
+          POSTGRES_PASSWORD: printforge
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U printforge" --health-interval 5s --health-timeout 5s --health-retries 10
+      # Catches the password reset emails; the tests read them through its API.
+      mailpit:
+        image: axllent/mailpit:v1.33.1
+        ports: ['1025:1025', '8025:8025']
+    env:
+      NEXT_PUBLIC_API_URL: http://localhost:8080/api
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Build the API
+        working-directory: backend
+        run: mvn -B -ntp package -DskipTests
+      - name: Build the frontend
+        working-directory: frontend
+        run: npm ci && npm run build
+      - name: Start the API (throwaway database with demo data)
+        working-directory: backend
+        run: |
+          JWT_SECRET="$(openssl rand -base64 48)" \
+          DB_HOST=localhost DB_NAME=printforge DB_USERNAME=printforge DB_PASSWORD=printforge \
+          SEED_DEMO_DATA=true \
+          MAIL_HOST=localhost MAIL_PORT=1025 MAIL_SMTP_AUTH=false MAIL_STARTTLS=false \
+          nohup java -jar target/printforge-api-0.0.1-SNAPSHOT.jar > ../backend.log 2>&1 &
+      - name: Start the frontend
+        working-directory: frontend
+        run: nohup npx next start -p 3000 > ../frontend.log 2>&1 &
+      - name: Wait for both
+        run: |
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:8080/api/products > /dev/null && curl -sf http://localhost:3000/ > /dev/null && exit 0
+            sleep 2
+          done
+          echo "Stack did not start"; tail -50 backend.log; tail -20 frontend.log; exit 1
+      # Uses the runner's preinstalled Google Chrome (playwright.config.ts: channel 'chrome').
+      - name: Run end-to-end tests
+        working-directory: frontend
+        run: npx playwright test
+        env:
+          E2E_DISPOSABLE: '1'
+          MAILPIT_URL: http://localhost:8025
+      - name: Keep the report and logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: e2e-report
+          path: |
+            frontend/playwright-report
+            frontend/test-results
+            backend.log
+            frontend.log
+          retention-days: 7

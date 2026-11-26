@@ -150,11 +150,13 @@ npm run dev                # http://localhost:3000
 
 Demo data (8 categories, 15 products, 1 admin, 1 customer) is created on first boot against an empty database **only when `SEED_DEMO_DATA=true`** — the `.env.example` you copied sets it for local development. It is off by default; never enable it in a real deployment.
 
-**Run backend tests:** `cd backend && mvn test` (uses an in-memory H2 database, no PostgreSQL required).
+**Run backend tests:** `cd backend && mvn test` — runs against an in-memory H2 database by default (no PostgreSQL needed), using the real `application.yml` plus the test overrides in `application-test.yml`. To run the same suite against PostgreSQL, set `TEST_DATABASE_URL`, `TEST_DATABASE_USERNAME` and `TEST_DATABASE_PASSWORD` to an empty, throwaway database.
 
-**Lint the frontend:** `cd frontend && npm run lint`.
+**Lint and type-check the frontend:** `cd frontend && npm run lint && npm run typecheck`.
 
-**Continuous integration:** `.github/workflows/ci.yml` runs the backend tests and the frontend lint, type-check and production build on every push to `main` and every pull request.
+**End-to-end tests:** `frontend/e2e` holds Playwright tests that drive real user journeys in Google Chrome (buying and cancelling an order, custom print upload → quote → acceptance, category management, registration, account settings, password reset, and the cookie/CSP security guarantees). They **create accounts and orders and change passwords**, so run them only against a disposable stack: an empty database, the API started with `SEED_DEMO_DATA=true` and the frontend built and started. Then `cd frontend && E2E_DISPOSABLE=1 npm run e2e` (the suite refuses to run without that flag). Password reset links are read from Mailpit when `MAILPIT_URL` is set (as in CI), or from the API's log via `BACKEND_LOG=<path to the log>` when SMTP is not configured. `E2E_BASE_URL` / `E2E_API_URL` override the default `localhost:3000` / `localhost:8080/api`.
+
+**Continuous integration:** `.github/workflows/ci.yml` runs on every push to `main` and every pull request: the backend suite on H2 and again on PostgreSQL 18; frontend lint, type-check and production build; and the end-to-end suite against a full stack (PostgreSQL, the API, the frontend and a Mailpit SMTP server), uploading the Playwright report and logs if it fails.
 
 > **Why `printforge` and not `campusconnect`?** The environment's `campusconnect` database already holds an unrelated project's tables and a `users.role` check constraint incompatible with PrintForge's `CUSTOMER`/`ADMIN` roles. PrintForge uses its own dedicated database to avoid corrupting that project.
 
