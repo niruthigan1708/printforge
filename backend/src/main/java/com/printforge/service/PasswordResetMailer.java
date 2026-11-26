@@ -21,13 +21,19 @@ public class PasswordResetMailer {
   private final ObjectProvider<JavaMailSender> mailSender;
   private final String from;
 
-  public PasswordResetMailer(ObjectProvider<JavaMailSender> mailSender, @Value("${app.mail.from:PrintForge <no-reply@printforge.local>}") String from) {
+  private final boolean smtpConfigured;
+
+  public PasswordResetMailer(ObjectProvider<JavaMailSender> mailSender, @Value("${app.mail.from:PrintForge <no-reply@printforge.local>}") String from,
+                             @Value("${spring.mail.host:}") String smtpHost) {
     this.mailSender = mailSender;
     this.from = from;
+    // application.yml always defines spring.mail.host (as ${MAIL_HOST:}), and Spring Boot creates a
+    // mail sender whenever the property exists, even when empty. Decide by the value instead.
+    this.smtpConfigured = smtpHost != null && !smtpHost.isBlank();
   }
 
   public void send(User user, String link, int validMinutes) {
-    JavaMailSender sender = mailSender.getIfAvailable();
+    JavaMailSender sender = smtpConfigured ? mailSender.getIfAvailable() : null;
     if (sender == null) {
       log.warn("SMTP is not configured (MAIL_HOST unset), so the password reset link for {} is logged instead of emailed: {}", user.getEmail(), link);
       return;

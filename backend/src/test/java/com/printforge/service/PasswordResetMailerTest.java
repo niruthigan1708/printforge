@@ -29,7 +29,7 @@ class PasswordResetMailerTest {
 
   @Test void sendsTheLinkOverSmtpWhenConfigured() {
     JavaMailSender sender = mock(JavaMailSender.class);
-    new PasswordResetMailer(provider(sender), "PrintForge <no-reply@shop.example>").send(user(), "https://shop.example/reset-password?token=abc", 30);
+    new PasswordResetMailer(provider(sender), "PrintForge <no-reply@shop.example>", "smtp.shop.example").send(user(), "https://shop.example/reset-password?token=abc", 30);
 
     ArgumentCaptor<SimpleMailMessage> message = ArgumentCaptor.forClass(SimpleMailMessage.class);
     verify(sender).send(message.capture());
@@ -40,13 +40,21 @@ class PasswordResetMailerTest {
   }
 
   @Test void withoutSmtpItDoesNotFail() {
-    assertDoesNotThrow(() -> new PasswordResetMailer(provider(null), "x@y.z").send(user(), "http://localhost:3000/reset-password?token=abc", 30));
+    assertDoesNotThrow(() -> new PasswordResetMailer(provider(null), "x@y.z", "").send(user(), "http://localhost:3000/reset-password?token=abc", 30));
+  }
+
+  @Test void anEmptyHostMeansLogTheLinkEvenIfAMailSenderBeanExists() {
+    // Spring Boot creates a mail sender whenever spring.mail.host is defined, even as "";
+    // that sender must not be used, or the link is lost instead of logged.
+    JavaMailSender sender = mock(JavaMailSender.class);
+    new PasswordResetMailer(provider(sender), "x@y.z", " ").send(user(), "http://localhost:3000/reset-password?token=abc", 30);
+    verifyNoInteractions(sender);
   }
 
   @Test void anSmtpFailureIsNotReportedToTheRequester() {
     JavaMailSender sender = mock(JavaMailSender.class);
     doThrow(new MailSendException("smtp down")).when(sender).send(any(SimpleMailMessage.class));
     // Surfacing the failure would reveal that the account exists; it is logged for operators instead.
-    assertDoesNotThrow(() -> new PasswordResetMailer(provider(sender), "x@y.z").send(user(), "link", 30));
+    assertDoesNotThrow(() -> new PasswordResetMailer(provider(sender), "x@y.z", "smtp.shop.example").send(user(), "link", 30));
   }
 }
