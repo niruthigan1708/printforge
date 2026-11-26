@@ -94,6 +94,8 @@ export default function ProductDetailPage() {
         <div className="checkout-grid" style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: 60 }}>
           {/* Image Container */}
           <div
+            className="detail-media"
+            data-reveal
             style={{
               background: '#FFFFFF',
               border: '1px solid var(--border-subtle)',
@@ -138,7 +140,7 @@ export default function ProductDetailPage() {
           </div>
 
           {/* Details Column */}
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div data-reveal style={{ display: 'flex', flexDirection: 'column' }}>
             <div className="eyebrow">{product.category} · In-House Design</div>
             <h1 style={{ fontSize: 'clamp(28px, 3.5vw, 42px)', margin: '8px 0 14px' }}>{product.name}</h1>
             

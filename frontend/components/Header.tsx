@@ -49,7 +49,8 @@ export function Header() {
           <div className="nav-actions">
             <Link className="icon-btn" href="/cart" aria-label="Open Cart">
               <ShoppingBag size={18} />
-              {itemCount > 0 && <span className="cart-count">{itemCount}</span>}
+              {/* Keyed on the count so the pop animation replays whenever it changes. */}
+              {itemCount > 0 && <span key={itemCount} className="cart-count">{itemCount}</span>}
             </Link>
 
             {user ? (
