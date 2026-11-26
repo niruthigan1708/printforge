@@ -159,3 +159,37 @@ jobs:
             backend.log
             frontend.log
           retention-days: 7
+
+  docker:
+    name: Docker (build and smoke-test the stack)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Configure the stack
+        run: |
+          {
+            echo "DB_PASSWORD=$(openssl rand -hex 16)"
+            echo "JWT_SECRET=$(openssl rand -base64 48)"
+            echo "SEED_DEMO_DATA=true"
+          } > .env
+      - name: Build and start
+        run: docker compose up -d --build
+      - name: Smoke-test the running stack
+        run: |
+          for i in $(seq 1 90); do
+            curl -sf http://localhost:8080/api/products > /dev/null && curl -sf http://localhost:3000/ > /dev/null && break
+            sleep 2
+          done
+          curl -sf http://localhost:8080/api/products | grep -q '"Adjustable Phone Stand"'
+          curl -sf http://localhost:3000/products | grep -q 'PrintForge'
+          # Logging in sets the httpOnly session cookie and never returns the token.
+          curl -s -D headers.txt -o body.json -H 'Content-Type: application/json' \
+            -d '{"email":"admin@printforge.com","password":"Admin@12345"}' http://localhost:8080/api/auth/login
+          grep -qi '^set-cookie: pf_session=.*HttpOnly' headers.txt
+          ! grep -q '"token"' body.json
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
