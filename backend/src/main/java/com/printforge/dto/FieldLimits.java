@@ -22,6 +22,7 @@ public final class FieldLimits {
   public static final int ADDRESS = 255;
   public static final int CITY = 100;
   public static final int POSTAL_CODE = 20;
+  public static final int TRACKING_NUMBER = 100;
   public static final int MAX_QUANTITY = 1000;
   public static final int MAX_ORDER_LINES = 50;
 }

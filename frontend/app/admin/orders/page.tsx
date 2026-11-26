@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { CheckCircle2, Clock } from 'lucide-react'
+import Link from 'next/link'
+import { AlertTriangle } from 'lucide-react'
 import { StatusBadge } from '../../../components/StatusBadge'
 import { api, ApiError } from '../../../lib/api'
 import { money, type Order, type OrderStatus, type Page } from '../../../lib/types'
@@ -36,11 +37,18 @@ export default function AdminOrdersPage() {
     const prompt = status === 'CANCELLED'
       ? `Cancel order ${order.orderNumber}? Its items will be returned to stock. This cannot be undone.`
       : `Move order ${order.orderNumber} to ${status}? Orders cannot be moved back to an earlier status.`
-    if (!confirm(prompt)) return
+    let trackingNumber: string | undefined
+    if (status === 'SHIPPED') {
+      // An order can only be delivered after it ships, and shipping needs a tracking number.
+      const entered = window.prompt(`Tracking number for order ${order.orderNumber}:`)
+      if (entered === null) return
+      if (!entered.trim()) { setError('A tracking number is required to mark an order as shipped.'); return }
+      trackingNumber = entered.trim()
+    } else if (!confirm(prompt)) return
     setUpdatingId(order.id)
     setError('')
     try {
-      const updated = await api.put<Order>(`/admin/orders/${order.id}/status`, { status })
+      const updated = await api.put<Order>(`/admin/orders/${order.id}/status`, { status, trackingNumber })
       setOrders(current => current.map(item => (item.id === order.id ? updated : item)))
       setNotice(`Order ${order.orderNumber} updated to ${status}`)
       setTimeout(() => setNotice(''), 3000)
@@ -83,9 +91,9 @@ export default function AdminOrdersPage() {
               {orders.map(order => (
                 <tr key={order.id}>
                   <td>
-                    <b style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-primary)' }}>
+                    <Link href={`/admin/orders/${order.id}`} style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--accent-primary)' }}>
                       {order.orderNumber}
-                    </b>
+                    </Link>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
                       {order.items.length} item{order.items.length > 1 ? 's' : ''}
                     </div>
@@ -107,6 +115,9 @@ export default function AdminOrdersPage() {
                   </td>
                   <td>
                     <StatusBadge status={order.status} />
+                    {order.issue?.open && (
+                      <div><span className="issue-flag"><AlertTriangle size={11} /> Not received</span></div>
+                    )}
                   </td>
                   <td>
                     <select

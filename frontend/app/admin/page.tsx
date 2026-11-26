@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { Box, ShoppingBag, Clock, Layers, DollarSign, ArrowRight, TrendingUp } from 'lucide-react'
+import { Box, ShoppingBag, Clock, Layers, DollarSign, ArrowRight, TrendingUp, AlertTriangle } from 'lucide-react'
 import { StatusBadge } from '../../components/StatusBadge'
 import { api, ApiError } from '../../lib/api'
 import { money, type DashboardSummary } from '../../lib/types'
@@ -64,6 +64,14 @@ export default function AdminDashboardPage() {
 
         <div className="stat-card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span className="stat-label">Delivery Problems</span>
+            <AlertTriangle size={16} color="var(--accent-amber)" />
+          </div>
+          <div className="stat-value" style={summary.deliveryIssues > 0 ? { color: 'var(--accent-amber-text)' } : undefined}>{summary.deliveryIssues}</div>
+        </div>
+
+        <div className="stat-card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span className="stat-label">Custom STL Queue</span>
             <Layers size={16} color="var(--accent-primary)" />
           </div>
@@ -112,7 +120,7 @@ export default function AdminDashboardPage() {
                 <tr key={order.id}>
                   <td>
                     <Link
-                      href="/admin/orders"
+                      href={`/admin/orders/${order.id}`}
                       style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--accent-primary)' }}
                     >
                       {order.orderNumber}

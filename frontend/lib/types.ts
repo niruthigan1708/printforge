@@ -28,6 +28,21 @@ export type AuthResponse = { id: number; name: string; email: string; role: Role
 
 export type OrderItem = { name: string; quantity: number; unitPrice: number; subtotal: number }
 
+export type OrderIssue = { reportedAt: string; note: string | null; resolvedAt: string | null; resolution: string | null; open: boolean }
+
+export type OrderEventType = 'PLACED' | 'STATUS_CHANGED' | 'RECEIVED' | 'ISSUE_REPORTED' | 'ISSUE_RESOLVED'
+
+/** One history entry. For customers, staff appear as "PrintForge studio" with no email. */
+export type OrderEvent = {
+  type: OrderEventType
+  status: OrderStatus | null
+  actorName: string | null
+  actorEmail: string | null
+  actorRole: Role | null
+  note: string | null
+  createdAt: string
+}
+
 export type Order = {
   id: number
   orderNumber: string
@@ -49,6 +64,19 @@ export type Order = {
   nextStatuses: OrderStatus[]
   /** True while the customer may still cancel this order themselves. */
   canCancel: boolean
+  /** Required before an order can be delivered; shown to the customer. */
+  trackingNumber: string | null
+  deliveredAt: string | null
+  receivedAt: string | null
+  /** For DELIVERED orders: confirmed by the customer, counted as received after 14 days, or still awaiting. */
+  receipt: 'CONFIRMED' | 'AUTO' | 'AWAITING' | null
+  /** Last moment the customer can report that the order never arrived. */
+  receiptDeadline: string | null
+  canConfirmReceipt: boolean
+  canReportIssue: boolean
+  issue: OrderIssue | null
+  /** Every recorded change, oldest first. */
+  history: OrderEvent[]
 }
 
 export type CustomPrintRequest = {
@@ -84,6 +112,8 @@ export type DashboardSummary = {
   totalProducts: number
   totalOrders: number
   pendingOrders: number
+  /** Delivered orders the customer reported as not received, not yet resolved. */
+  deliveryIssues: number
   customRequests: number
   revenue: number
   recentOrders: Order[]

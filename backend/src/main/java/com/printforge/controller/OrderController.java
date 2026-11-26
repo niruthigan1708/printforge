@@ -18,4 +18,10 @@ public class OrderController {
   @GetMapping("/{id}") public OrderResponse get(Authentication auth, @PathVariable Long id) { return service.getMine(auth.getName(), id); }
   /** Customers can cancel their own order while it is still PENDING. */
   @PutMapping("/{id}/cancel") public OrderResponse cancel(Authentication auth, @PathVariable Long id) { return service.cancelMine(auth.getName(), id); }
+  /** Confirms a DELIVERED order arrived. */
+  @PutMapping("/{id}/received") public OrderResponse received(Authentication auth, @PathVariable Long id) { return service.confirmReceipt(auth.getName(), id); }
+  /** Reports that a DELIVERED order never arrived (within 14 days of delivery). The body is optional. */
+  @PutMapping("/{id}/not-received") public OrderResponse notReceived(Authentication auth, @PathVariable Long id, @Valid @RequestBody(required = false) OrderIssueRequest request) {
+    return service.reportIssue(auth.getName(), id, request == null ? null : request.note());
+  }
 }

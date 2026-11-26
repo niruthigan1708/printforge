@@ -11,7 +11,8 @@ const STEP_ICONS: Record<OrderStatus, typeof Clock> = {
   CANCELLED: XCircle,
 }
 
-const LABELS: Record<OrderStatus, string> = {
+/** Customer-facing names for each status. */
+export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   PENDING: 'Placed',
   CONFIRMED: 'Confirmed',
   PRINTING: 'Printing',
@@ -66,7 +67,7 @@ export function OrderTracker({ status }: { status: OrderStatus }) {
                   <Icon size={14} />
                 )}
               </span>
-              <span className="tracker-label">{LABELS[step]}</span>
+              <span className="tracker-label">{ORDER_STATUS_LABELS[step]}</span>
             </li>
           )
         })}

@@ -7,6 +7,8 @@ import { ArrowLeft, Clock, MapPin, PackageCheck, Truck, XCircle } from 'lucide-r
 import { Header } from '../../../components/Header'
 import { StatusBadge } from '../../../components/StatusBadge'
 import { OrderTracker } from '../../../components/OrderTracker'
+import { DeliveryPanel } from '../../../components/DeliveryPanel'
+import { OrderHistory } from '../../../components/OrderHistory'
 import { RequireAuth } from '../../../lib/guards'
 import { api, ApiError } from '../../../lib/api'
 import { money, type Order } from '../../../lib/types'
@@ -120,6 +122,8 @@ function OrderDetail() {
             </div>
           )}
           {cancelError && <div className="alert alert-error" style={{ marginTop: 16 }}>{cancelError}</div>}
+
+          <DeliveryPanel order={order} onChange={setOrder} />
         </div>
 
         {/* Order Details Grid */}
@@ -185,6 +189,12 @@ function OrderDetail() {
               Payment Mode: <b>Cash on Delivery / Bank Transfer</b>
             </div>
           </aside>
+        </div>
+
+        {/* Everything that happened to this order, and who did it. */}
+        <div className="history-card" style={{ marginTop: 40 }} data-reveal>
+          <h3 style={{ fontSize: 18, marginBottom: 18 }}>Order History</h3>
+          <OrderHistory events={order.history} />
         </div>
       </section>
     </main>

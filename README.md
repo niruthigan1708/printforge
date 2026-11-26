@@ -15,15 +15,16 @@ Built as a realistic, portfolio-quality MVP — clean layered architecture, real
 - Product detail pages with related products
 - Cart with quantity controls, persisted locally
 - Checkout with cash-on-delivery / demo payment, server-side stock validation
-- Order history with a visual status tracker (Placed → Confirmed → Printing → Ready → Shipped → Delivered)
+- Order history with a visual status tracker (Placed → Confirmed → Printing → Ready → Shipped → Delivered), the tracking number, and a timeline of every change
+- Confirm a delivered order arrived, or report within 14 days that it did not
 - Upload a custom 3D model (STL / 3MF / OBJ, up to 20MB) with material, color, quantity, and notes
 - View custom print request status, accept or reject an admin quote
 
 **Admin**
-- Dashboard with key stats (products, orders, pending orders, custom requests, revenue) and recent activity
+- Dashboard with key stats (products, orders, pending orders, open delivery problems, custom requests, revenue) and recent activity
 - Full product CRUD with stock and category management, plus a real photo upload per product
 - Category CRUD (delete blocked while products still reference it)
-- Order list and status management
+- Order list and status management; shipping requires a tracking number, and each order page shows its full history (who changed what, when) and lets staff resolve "not received" reports
 - Custom print request review: download the uploaded file, send a quote, update production status
 
 ## Screenshots
@@ -69,7 +70,8 @@ The backend never exposes JPA entities over HTTP — every endpoint returns a DT
 | `users` | `id, name, email (unique), password (BCrypt), role, created_at` |
 | `category` | `id, name (unique), description` |
 | `product` | `id, name, description, price, stock_quantity, material, color, image_url, category_id, active, created_at, updated_at` |
-| `customer_orders` | `id, order_number (PF-1001…), customer_id, subtotal, delivery_fee, total_amount, status, shipping_*, created_at, updated_at` |
+| `customer_orders` | `id, order_number (PF-1001…), customer_id, subtotal, delivery_fee, total_amount, status, shipping_*, tracking_number, delivered_at, received_at, issue_reported_at, issue_note, issue_resolved_at, issue_resolution, created_at, updated_at` |
+| `order_event` | `id, order_id, event_type (PLACED, STATUS_CHANGED, RECEIVED, ISSUE_REPORTED, ISSUE_RESOLVED), status, actor_name, actor_email, actor_role, note, created_at` (order history) |
 | `order_item` | `id, order_id, product_id, product_name, quantity, unit_price, subtotal` — product name/price are snapshotted so past orders stay correct if a product changes later |
 | `custom_print_request` | `id, request_number (CR-1001…), customer_id, file_name, file_path, file_type, material, color, quantity, notes, status, admin_quote, admin_notes, created_at, updated_at` |
 
@@ -77,7 +79,9 @@ Relationships: one customer → many orders and many custom print requests; one 
 
 **Schema migrations:** the schema is owned by [Flyway](https://flywaydb.org/) migrations in `backend/src/main/resources/db/migration` and applied automatically on startup; Hibernate only validates that the entities match (`ddl-auto: validate`). To change the schema, add a new `V<n>__description.sql` file — never edit one that has already run. Databases created before Flyway was adopted are baselined at version 1 on first start and then receive later migrations. The test suite runs the same migrations on H2, so a migration that drifts from the entities fails the build.
 
-**Order status:** `PENDING → CONFIRMED → PRINTING → READY → SHIPPED → DELIVERED`, or `CANCELLED`. Orders only move forward (steps may be skipped) and can be cancelled until they ship; cancelling returns the items to stock. `DELIVERED` and `CANCELLED` are final.
+**Order status:** `PENDING → CONFIRMED → PRINTING → READY → SHIPPED → DELIVERED`, or `CANCELLED`. Orders only move forward and production steps may be skipped, but `SHIPPED` needs a tracking number and `DELIVERED` can only follow `SHIPPED`, so an order is never marked delivered without a shipment. Orders can be cancelled until they ship; cancelling returns the items to stock. `DELIVERED` and `CANCELLED` are final. Every change is recorded with who made it (customers see staff as "PrintForge studio").
+
+**After delivery:** the customer can confirm the order arrived, or within 14 days report that it did not. A report shows on the admin dashboard and orders list until staff resolve it with an explanation the customer sees. A delivered order with no confirmation and no open report counts as received once the 14 days pass.
 
 **Custom print status:** `SUBMITTED → UNDER_REVIEW → QUOTED → ACCEPTED → IN_PRODUCTION → COMPLETED`, or `REJECTED` / `CANCELLED`. `QUOTED` is reached only by sending a quote (which can be revised until the customer answers); `ACCEPTED` / `REJECTED` are set only by the customer; admins drive the remaining steps and can cancel until completion. `REJECTED`, `COMPLETED` and `CANCELLED` are final.
 
@@ -118,9 +122,12 @@ A token only identifies the user: on every request the server re-reads the accou
 | GET | `/api/shop/settings` | Public | `{ deliveryFee, freeDeliveryThreshold }` used to price orders |
 | POST/PUT/DELETE | `/api/categories[/{id}]` | ADMIN | Manage categories (delete blocked if products reference it) |
 | POST | `/api/orders` | CUSTOMER | Place an order (validates stock, transactional). Optional `expectedTotal`: rejected with `409` if prices changed since the customer saw it |
-| GET | `/api/orders` / `/api/orders/{id}` | CUSTOMER | Own orders only |
-| GET | `/api/admin/orders` | ADMIN | All orders |
-| PUT | `/api/admin/orders/{id}/status` | ADMIN | Update order status |
+| GET | `/api/orders` / `/api/orders/{id}` | CUSTOMER | Own orders only (with tracking number and history) |
+| PUT | `/api/orders/{id}/received` | CUSTOMER | Confirm a delivered order arrived |
+| PUT | `/api/orders/{id}/not-received` | CUSTOMER | Report a delivered order as not received, within 14 days. Optional `{ note }` |
+| GET | `/api/admin/orders` / `/api/admin/orders/{id}` | ADMIN | All orders / one order, with staff names in the history |
+| PUT | `/api/admin/orders/{id}/status` | ADMIN | Update order status: `{ status, trackingNumber?, note? }`; `trackingNumber` is required for `SHIPPED` |
+| PUT | `/api/admin/orders/{id}/issue/resolve` | ADMIN | Resolve a "not received" report: `{ resolution }` (shown to the customer) |
 | POST | `/api/custom-prints` | CUSTOMER | Submit a custom print request (multipart: `file, material, color, quantity, notes`) |
 | GET | `/api/custom-prints` / `/{id}` | CUSTOMER | Own requests only |
 | PUT | `/api/custom-prints/{id}/accept` \| `/reject` | CUSTOMER | Respond to a quote |
@@ -174,7 +181,7 @@ The demo product photos live in `backend/src/main/resources/seed/product-images/
 
 **Lint and type-check the frontend:** `cd frontend && npm run lint && npm run typecheck`.
 
-**End-to-end tests:** `frontend/e2e` holds Playwright tests that drive real user journeys in Google Chrome (buying and cancelling an order, custom print upload → quote → acceptance, category management, registration, account settings, password reset, and the cookie/CSP security guarantees). They **create accounts and orders and change passwords**, so run them only against a disposable stack: an empty database, the API started with `SEED_DEMO_DATA=true` and the frontend built and started. Then `cd frontend && E2E_DISPOSABLE=1 npm run e2e` (the suite refuses to run without that flag). Password reset links are read from Mailpit when `MAILPIT_URL` is set (as in CI), or from the API's log via `BACKEND_LOG=<path to the log>` when SMTP is not configured. `E2E_BASE_URL` / `E2E_API_URL` override the default `localhost:3000` / `localhost:8080/api`.
+**End-to-end tests:** `frontend/e2e` holds Playwright tests that drive real user journeys in Google Chrome (buying and cancelling an order, shipping and delivering one with a "not received" report and confirmation, custom print upload → quote → acceptance, category management, registration, account settings, password reset, and the cookie/CSP security guarantees). They **create accounts and orders and change passwords**, so run them only against a disposable stack: an empty database, the API started with `SEED_DEMO_DATA=true` and the frontend built and started. Then `cd frontend && E2E_DISPOSABLE=1 npm run e2e` (the suite refuses to run without that flag). Password reset links are read from Mailpit when `MAILPIT_URL` is set (as in CI), or from the API's log via `BACKEND_LOG=<path to the log>` when SMTP is not configured. `E2E_BASE_URL` / `E2E_API_URL` override the default `localhost:3000` / `localhost:8080/api`.
 
 **Continuous integration:** `.github/workflows/ci.yml` runs on every push to `main` and every pull request: the backend suite on H2 and again on PostgreSQL 18; frontend lint, type-check and production build; and the end-to-end suite against a full stack (PostgreSQL, the API, the frontend and a Mailpit SMTP server), uploading the Playwright report and logs if it fails.
 
@@ -232,7 +239,7 @@ PrintForge/
 │   └── src/test/java/    JUnit + MockMvc tests
 ├── frontend/
 │   ├── app/               Next.js App Router pages (customer + /admin)
-│   ├── components/        Header, ProductCard, StatusBadge, OrderTracker, admin forms
+│   ├── components/        Header, ProductCard, StatusBadge, OrderTracker, OrderHistory, DeliveryPanel, admin forms
 │   └── lib/                api client, auth/cart context, types, route guards
 ├── screenshots/
 └── .env.example

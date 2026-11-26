@@ -59,7 +59,9 @@ class StatusWorkflowTest {
   }
 
   private ResultActions setOrderStatus(long orderId, String status) throws Exception {
-    return mvc.perform(put("/api/admin/orders/" + orderId + "/status").header("Authorization", admin()).contentType("application/json").content("{\"status\":\"" + status + "\"}"));
+    // SHIPPED needs a tracking number; send one so these tests stay about the workflow itself.
+    String tracking = status.equals("SHIPPED") ? ",\"trackingNumber\":\"TRK-1\"" : "";
+    return mvc.perform(put("/api/admin/orders/" + orderId + "/status").header("Authorization", admin()).contentType("application/json").content("{\"status\":\"" + status + "\"" + tracking + "}"));
   }
 
   private long submitRequest() throws Exception {
@@ -86,7 +88,7 @@ class StatusWorkflowTest {
 
     setOrderStatus(order, "PRINTING").andExpect(status().isOk())
       .andExpect(jsonPath("$.status").value("PRINTING"))
-      .andExpect(jsonPath("$.nextStatuses", contains("READY", "SHIPPED", "DELIVERED", "CANCELLED")));
+      .andExpect(jsonPath("$.nextStatuses", contains("READY", "SHIPPED", "CANCELLED")));
   }
 
   @Test void ordersCannotMoveBackwards() throws Exception {

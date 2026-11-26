@@ -27,9 +27,10 @@ public class DashboardService {
       products.count(),
       orders.count(),
       orders.countByStatus(OrderStatus.PENDING),
+      orders.countByIssueReportedAtIsNotNullAndIssueResolvedAtIsNull(),
       customPrints.count(),
       orders.sumTotalAmountExcludingStatus(OrderStatus.CANCELLED),
-      orders.findTop5ByOrderByCreatedAtDesc().stream().map(OrderResponse::from).toList(),
+      orders.findTop5ByOrderByCreatedAtDesc().stream().map(OrderResponse::forAdmin).toList(),
       customPrints.findTop5ByOrderByCreatedAtDesc().stream().map(CustomPrintRequestResponse::from).toList());
   }
 }

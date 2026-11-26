@@ -20,6 +20,9 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
   long countByStatus(OrderStatus status);
 
+  /** Orders with a non-delivery report the studio has not resolved yet. */
+  long countByIssueReportedAtIsNotNullAndIssueResolvedAtIsNull();
+
   /** Sum of order totals excluding one status (used for revenue, which ignores cancelled orders). */
   @Query("select coalesce(sum(o.totalAmount), 0) from Order o where o.status <> :excluded")
   BigDecimal sumTotalAmountExcludingStatus(@Param("excluded") OrderStatus excluded);

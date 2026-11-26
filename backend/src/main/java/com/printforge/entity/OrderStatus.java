@@ -6,8 +6,9 @@ import java.util.List;
 /**
  * Order lifecycle: PENDING → CONFIRMED → PRINTING → READY → SHIPPED → DELIVERED, or CANCELLED.
  *
- * <p>Orders only move forward (skipping steps is allowed, e.g. PENDING → PRINTING), and can be
- * cancelled until they ship. DELIVERED and CANCELLED are final.
+ * <p>Orders only move forward and may skip production steps (e.g. PENDING → PRINTING), but an
+ * order can only be DELIVERED after it has been SHIPPED, which needs a tracking number. Orders can
+ * be cancelled until they ship. DELIVERED and CANCELLED are final.
  */
 public enum OrderStatus {
   PENDING, CONFIRMED, PRINTING, READY, SHIPPED, DELIVERED, CANCELLED;
@@ -19,7 +20,9 @@ public enum OrderStatus {
     List<OrderStatus> next = new ArrayList<>();
     if (isTerminal()) return next;
     for (OrderStatus candidate : values()) {
-      if (candidate != CANCELLED && candidate.ordinal() > ordinal()) next.add(candidate);
+      if (candidate == CANCELLED || candidate.ordinal() <= ordinal()) continue;
+      if (candidate == DELIVERED && this != SHIPPED) continue; // never "delivered" without a shipment
+      next.add(candidate);
     }
     if (ordinal() < SHIPPED.ordinal()) next.add(CANCELLED);
     return next;
