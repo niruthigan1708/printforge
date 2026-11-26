@@ -28,7 +28,7 @@ Built as a realistic, portfolio-quality MVP — clean layered architecture, real
 
 ## Screenshots
 
-Captured from a local run with the seeded demo data (demo accounts, generated placeholder product photos).
+Captured from a disposable local stack with the seeded demo data only (demo accounts, generated placeholder product photos, orders placed by the end-to-end tests).
 
 | Storefront | Product detail |
 |---|---|
@@ -39,6 +39,10 @@ Captured from a local run with the seeded demo data (demo accounts, generated pl
 | ![Custom print upload](screenshots/05-custom-print-upload.png) | ![Admin dashboard](screenshots/06-admin-dashboard.png) |
 | **Admin products** | **Admin orders** (only valid next statuses offered) |
 | ![Admin product list](screenshots/07-admin-products.png) | ![Admin order list](screenshots/08-admin-orders.png) |
+| **Admin categories** | **My Orders** (orders and custom print requests) |
+| ![Admin categories](screenshots/09-admin-categories.png) | ![My orders](screenshots/10-my-orders.png) |
+| **Account settings** | |
+| ![Account settings](screenshots/11-account.png) | |
 
 ## Tech Stack
 
