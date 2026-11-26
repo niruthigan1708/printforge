@@ -130,6 +130,20 @@ Errors are returned as consistent JSON: `{ "message", "status", "timestamp" }` (
 
 ## How to Run
 
+### With Docker (quickest)
+
+Needs only Docker. From the repository root:
+
+```bash
+cp .env.example .env      # set DB_PASSWORD and a long random JWT_SECRET (e.g. openssl rand -base64 48);
+                          # SEED_DEMO_DATA=true gives you the demo accounts and products
+docker compose up --build # storefront: http://localhost:3000, API: http://localhost:8080
+```
+
+This runs PostgreSQL, the API and the storefront (`docker-compose.yml`); the database and uploaded files persist in named volumes (`docker compose down -v` removes them). The API image runs as an unprivileged user. `NEXT_PUBLIC_API_URL` is compiled into the storefront at build time, so rebuild the `web` image after changing it. For a real deployment put both behind HTTPS on the same site (e.g. `shop.example.com` and `api.example.com`), set `FRONTEND_URL`, `CORS_ALLOWED_ORIGINS` and the `MAIL_*` settings, and leave `SEED_DEMO_DATA` unset.
+
+### Without Docker
+
 **Prerequisites:** Java 21, Maven, Node.js 20.9+, PostgreSQL running locally.
 
 ```bash
