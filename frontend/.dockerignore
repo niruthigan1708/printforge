@@ -1,0 +1,9 @@
+# Keep the build context small and never copy secrets or local data into an image.
+node_modules/
+.next/
+.env*
+test-results/
+playwright-report/
+e2e/
+playwright.config.ts
+*.log
