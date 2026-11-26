@@ -120,26 +120,31 @@ export default function AdminCategoriesPage() {
                 <tr key={category.id}>
                   <td><input aria-label="Name" required maxLength={100} value={editDraft.name} onChange={e => setEditDraft({ ...editDraft, name: e.target.value })} /></td>
                   <td><input aria-label="Description" maxLength={255} value={editDraft.description} onChange={e => setEditDraft({ ...editDraft, description: e.target.value })} /></td>
-                  <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                  <td>
+                    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', alignItems: 'center' }}>
                     <button className="btn btn-sm btn-primary" disabled={busyId === category.id || !editDraft.name.trim()} onClick={() => save(category)}>
                       <Check size={14} /> Save
-                    </button>{' '}
+                    </button>
                     <button className="btn btn-sm secondary" onClick={() => setEditingId(null)}>
                       <X size={14} /> Cancel
                     </button>
+                    </div>
                   </td>
                 </tr>
               ) : (
                 <tr key={category.id}>
                   <td style={{ fontWeight: 700 }}>{category.name}</td>
                   <td style={{ color: 'var(--text-secondary)' }}>{category.description || '—'}</td>
-                  <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                  <td>
+                    {/* A flex row: the icon button is block-level, so nowrap alone let it wrap below Edit. */}
+                    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', alignItems: 'center' }}>
                     <button className="btn btn-sm secondary" onClick={() => { setEditingId(category.id); setEditDraft({ name: category.name, description: category.description || '' }) }}>
                       <Edit size={14} /> Edit
-                    </button>{' '}
+                    </button>
                     <button className="icon-btn" aria-label={`Delete ${category.name}`} title="Delete" disabled={busyId === category.id} onClick={() => remove(category)}>
                       <Trash2 size={16} />
                     </button>
+                    </div>
                   </td>
                 </tr>
               ))}
