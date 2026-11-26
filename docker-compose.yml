@@ -1,0 +1,66 @@
+# The whole PrintForge stack: PostgreSQL, the API and the storefront.
+#
+#   cp .env.example .env      # then set DB_PASSWORD and a long random JWT_SECRET
+#   docker compose up --build # http://localhost:3000 (API on http://localhost:8080)
+#
+# Settings come from .env (see README "Environment Variables"). Data survives restarts in the
+# named volumes below; `docker compose down -v` deletes it.
+
+name: printforge
+
+services:
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: ${DB_NAME:-printforge}
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+    volumes:
+      - db-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_NAME:-printforge}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build: ./backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-printforge}
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
+      # Demo accounts with published passwords: local trials only, never a real deployment.
+      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-false}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+      MAIL_HOST: ${MAIL_HOST:-}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-PrintForge <no-reply@printforge.local>}
+    volumes:
+      - uploads:/app/uploads
+    ports:
+      - "8080:8080"
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        # Compiled into the browser bundle: the address the *browser* uses to reach the API.
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080/api}
+    depends_on:
+      - api
+    ports:
+      - "3000:3000"
+
+volumes:
+  db-data:
+  uploads:
