@@ -30,10 +30,14 @@ function CustomPrintDetail() {
     setBusy(true)
     setActionError('')
     try {
-      const updated = await api.put<CustomPrintRequest>(`/custom-prints/${params.id}/${action}`)
+      // Accepting names the price on screen, so a quote revised meanwhile is never agreed to unseen.
+      const body = action === 'accept' ? { expectedQuote: request?.adminQuote } : undefined
+      const updated = await api.put<CustomPrintRequest>(`/custom-prints/${params.id}/${action}`, body)
       setRequest(updated)
     } catch (err) {
       setActionError(err instanceof ApiError ? err.message : 'Could not update this request.')
+      // The quote or status changed elsewhere: show the current version.
+      if (err instanceof ApiError && err.status === 409) load()
     } finally {
       setBusy(false)
     }

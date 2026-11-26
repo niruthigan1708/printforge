@@ -18,6 +18,8 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
@@ -78,11 +80,19 @@ public class CustomPrintService {
     return CustomPrintRequestResponse.from(requests.findByIdAndCustomer(id, user).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Custom print request not found")));
   }
 
+  /**
+   * The customer accepts the quote. With {@code expectedQuote} (the amount they were shown), the
+   * accept is refused if the studio has revised the quote since, so a stale page can never agree to
+   * a different price.
+   */
   @Transactional
-  public CustomPrintRequestResponse accept(String email, Long id) {
-    User user = users.findByEmailIgnoreCase(email).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
-    CustomPrintRequest request = requests.findByIdAndCustomer(id, user).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Custom print request not found"));
+  public CustomPrintRequestResponse accept(String email, Long id, BigDecimal expectedQuote) {
+    CustomPrintRequest request = lockMine(email, id);
     if (request.getStatus() != RequestStatus.QUOTED) throw new ResponseStatusException(HttpStatus.CONFLICT, "Only a quoted request can be accepted");
+    if (expectedQuote != null && request.getAdminQuote().compareTo(expectedQuote) != 0) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "The studio has revised this quote to Rs. "
+        + request.getAdminQuote().setScale(2, RoundingMode.HALF_UP) + ". Please review the new price before accepting.");
+    }
     request.setStatus(RequestStatus.ACCEPTED);
     request.setUpdatedAt(Instant.now());
     return CustomPrintRequestResponse.from(request);
@@ -90,8 +100,7 @@ public class CustomPrintService {
 
   @Transactional
   public CustomPrintRequestResponse reject(String email, Long id) {
-    User user = users.findByEmailIgnoreCase(email).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
-    CustomPrintRequest request = requests.findByIdAndCustomer(id, user).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Custom print request not found"));
+    CustomPrintRequest request = lockMine(email, id);
     if (request.getStatus() != RequestStatus.QUOTED) throw new ResponseStatusException(HttpStatus.CONFLICT, "Only a quoted request can be rejected");
     request.setStatus(RequestStatus.REJECTED);
     request.setUpdatedAt(Instant.now());
@@ -123,8 +132,7 @@ public class CustomPrintService {
   /** A customer withdrawing their own request before it has been quoted. */
   @Transactional
   public CustomPrintRequestResponse cancelMine(String email, Long id) {
-    User user = users.findByEmailIgnoreCase(email).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
-    CustomPrintRequest request = requests.findByIdAndCustomer(id, user).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Custom print request not found"));
+    CustomPrintRequest request = lockMine(email, id);
     if (request.getStatus() == RequestStatus.CANCELLED) return CustomPrintRequestResponse.from(request);
     if (!request.getStatus().customerCanCancel()) {
       String hint = request.getStatus() == RequestStatus.QUOTED ? " You can decline the quote instead." : "";
@@ -144,13 +152,24 @@ public class CustomPrintService {
     return requests.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Custom print request not found"));
   }
 
+  private CustomPrintRequest lockForUpdate(Long id) {
+    return requests.findByIdForUpdate(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Custom print request not found"));
+  }
+
+  /** The caller's own request, locked; another customer's request is reported as not found. */
+  private CustomPrintRequest lockMine(String email, Long id) {
+    return requests.findByIdForUpdate(id)
+      .filter(candidate -> candidate.getCustomer().getEmail().equalsIgnoreCase(email))
+      .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Custom print request not found"));
+  }
+
   public CustomPrintRequestResponse get(Long id) {
     return CustomPrintRequestResponse.from(findEntity(id));
   }
 
   @Transactional
   public CustomPrintRequestResponse quote(Long id, QuoteRequest quoteRequest) {
-    CustomPrintRequest request = findEntity(id);
+    CustomPrintRequest request = lockForUpdate(id);
     if (!request.getStatus().canBeQuoted()) {
       // Once the customer has accepted or rejected, re-quoting would silently undo their answer.
       throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot quote a request that is already " + request.getStatus());
@@ -164,7 +183,7 @@ public class CustomPrintService {
 
   @Transactional
   public CustomPrintRequestResponse updateStatus(Long id, RequestStatus status) {
-    CustomPrintRequest request = findEntity(id);
+    CustomPrintRequest request = lockForUpdate(id);
     RequestStatus current = request.getStatus();
     if (current == status) return CustomPrintRequestResponse.from(request);
     if (current.isTerminal()) throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot change the status of a " + current + " request");

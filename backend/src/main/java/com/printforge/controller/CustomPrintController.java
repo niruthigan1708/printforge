@@ -2,6 +2,7 @@ package com.printforge.controller;
 
 import com.printforge.dto.CustomPrintRequestResponse;
 import com.printforge.dto.PageResponse;
+import com.printforge.dto.QuoteAnswerRequest;
 import com.printforge.service.CustomPrintService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -22,7 +23,10 @@ public class CustomPrintController {
     return service.mine(auth.getName(), PageResponse.newestFirst(page, size));
   }
   @GetMapping("/{id}") public CustomPrintRequestResponse get(Authentication auth, @PathVariable Long id) { return service.getMine(auth.getName(), id); }
-  @PutMapping("/{id}/accept") public CustomPrintRequestResponse accept(Authentication auth, @PathVariable Long id) { return service.accept(auth.getName(), id); }
+  /** Body optional: `{ expectedQuote }` refuses the accept (409) if the quote changed since the customer saw it. */
+  @PutMapping("/{id}/accept") public CustomPrintRequestResponse accept(Authentication auth, @PathVariable Long id, @RequestBody(required = false) QuoteAnswerRequest request) {
+    return service.accept(auth.getName(), id, request == null ? null : request.expectedQuote());
+  }
   @PutMapping("/{id}/reject") public CustomPrintRequestResponse reject(Authentication auth, @PathVariable Long id) { return service.reject(auth.getName(), id); }
   /** Customers can withdraw a request until it has been quoted. */
   @PutMapping("/{id}/cancel") public CustomPrintRequestResponse cancel(Authentication auth, @PathVariable Long id) { return service.cancelMine(auth.getName(), id); }

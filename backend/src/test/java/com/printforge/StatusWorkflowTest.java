@@ -168,6 +168,26 @@ class StatusWorkflowTest {
     setRequestStatus(rejected, "CANCELLED").andExpect(status().isConflict());
   }
 
+  @Test void aCustomerCannotAcceptAPriceTheyWereNotShown() throws Exception {
+    long request = submitRequest();
+    quote(request).andExpect(status().isOk()); // 2500.00, which the customer's page shows
+    mvc.perform(put("/api/admin/custom-prints/" + request + "/quote").header("Authorization", admin()).contentType("application/json")
+      .content("{\"amount\":\"3100.00\",\"notes\":\"Needs supports\"}")).andExpect(status().isOk());
+
+    // Accepting from the stale page is refused and changes nothing.
+    mvc.perform(put("/api/custom-prints/" + request + "/accept").header("Authorization", customer()).contentType("application/json")
+        .content("{\"expectedQuote\":2500.00}"))
+      .andExpect(status().isConflict())
+      .andExpect(jsonPath("$.message", containsString("revised this quote to Rs. 3100.00")));
+    mvc.perform(get("/api/custom-prints/" + request).header("Authorization", customer()))
+      .andExpect(jsonPath("$.status").value("QUOTED"));
+
+    // Accepting the price now on screen works; scale differences (3100 vs 3100.00) do not matter.
+    mvc.perform(put("/api/custom-prints/" + request + "/accept").header("Authorization", customer()).contentType("application/json")
+        .content("{\"expectedQuote\":3100}"))
+      .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("ACCEPTED"));
+  }
+
   @Test void quotesCanBeRevisedBeforeTheCustomerAnswers() throws Exception {
     long request = submitRequest();
     quote(request).andExpect(status().isOk());

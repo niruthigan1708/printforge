@@ -130,7 +130,7 @@ A token only identifies the user: on every request the server re-reads the accou
 | PUT | `/api/admin/orders/{id}/issue/resolve` | ADMIN | Resolve a "not received" report: `{ resolution }` (shown to the customer) |
 | POST | `/api/custom-prints` | CUSTOMER | Submit a custom print request (multipart: `file, material, color, quantity, notes`) |
 | GET | `/api/custom-prints` / `/{id}` | CUSTOMER | Own requests only |
-| PUT | `/api/custom-prints/{id}/accept` \| `/reject` | CUSTOMER | Respond to a quote |
+| PUT | `/api/custom-prints/{id}/accept` | `/reject` | CUSTOMER | Respond to a quote. Accept takes an optional `{ expectedQuote }`: rejected with `409` if the studio revised the quote since the customer saw it (the storefront always sends it) || `/reject` | CUSTOMER | Respond to a quote |
 | GET | `/api/admin/custom-prints` / `/{id}` | ADMIN | All requests |
 | GET | `/api/admin/custom-prints/{id}/file` | ADMIN | Download the uploaded model |
 | PUT | `/api/admin/custom-prints/{id}/quote` | ADMIN | Send a quote (`amount, notes`) |
@@ -181,7 +181,7 @@ The demo product photos live in `backend/src/main/resources/seed/product-images/
 
 **Lint and type-check the frontend:** `cd frontend && npm run lint && npm run typecheck`.
 
-**End-to-end tests:** `frontend/e2e` holds Playwright tests that drive real user journeys in Google Chrome (buying and cancelling an order, shipping and delivering one with a "not received" report and confirmation, custom print upload → quote → acceptance, category management, registration, account settings, password reset, and the cookie/CSP security guarantees). They **create accounts and orders and change passwords**, so run them only against a disposable stack: an empty database, the API started with `SEED_DEMO_DATA=true` and the frontend built and started. Then `cd frontend && E2E_DISPOSABLE=1 npm run e2e` (the suite refuses to run without that flag). Password reset links are read from Mailpit when `MAILPIT_URL` is set (as in CI), or from the API's log via `BACKEND_LOG=<path to the log>` when SMTP is not configured. `E2E_BASE_URL` / `E2E_API_URL` override the default `localhost:3000` / `localhost:8080/api`.
+**End-to-end tests:** `frontend/e2e` holds Playwright tests that drive real user journeys in Google Chrome (buying and cancelling an order, shipping and delivering one with a "not received" report and confirmation, custom print upload → quote → acceptance, category management, registration, account settings, password reset, the cookie/CSP security guarantees, and that every page fits a 360px phone screen). They **create accounts and orders and change passwords**, so run them only against a disposable stack: an empty database, the API started with `SEED_DEMO_DATA=true` and the frontend built and started. Then `cd frontend && E2E_DISPOSABLE=1 npm run e2e` (the suite refuses to run without that flag). Password reset links are read from Mailpit when `MAILPIT_URL` is set (as in CI), or from the API's log via `BACKEND_LOG=<path to the log>` when SMTP is not configured. `E2E_BASE_URL` / `E2E_API_URL` override the default `localhost:3000` / `localhost:8080/api`.
 
 **Continuous integration:** `.github/workflows/ci.yml` runs on every push to `main` and every pull request: the backend suite on H2 and again on PostgreSQL 18; frontend lint, type-check and production build; and the end-to-end suite against a full stack (PostgreSQL, the API, the frontend and a Mailpit SMTP server), uploading the Playwright report and logs if it fails.
 
