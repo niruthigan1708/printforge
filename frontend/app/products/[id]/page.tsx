@@ -204,7 +204,7 @@ export default function ProductDetailPage() {
 
             {/* Quantity Stepper & Add to Cart */}
             {!outOfStock && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
+              <div className="buy-row">
                 <div className="quantity">
                   <button
                     onClick={() => setQuantity(q => Math.max(1, q - 1))}

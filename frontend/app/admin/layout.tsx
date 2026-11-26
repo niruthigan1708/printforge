@@ -22,7 +22,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <Header />
       <div className="admin-shell">
         <nav className="admin-sidebar">
-          <div style={{ padding: '0 12px 12px', fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          <div className="admin-sidebar-title">
             STUDIO CONSOLE
           </div>
           {LINKS.map(link => {

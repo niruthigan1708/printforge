@@ -89,7 +89,7 @@ export default function AdminCategoriesPage() {
       {notice && <div className="alert alert-success">{notice}</div>}
       {error && <div className="alert alert-error">{error}</div>}
 
-      <form className="form-card" onSubmit={create} style={{ maxWidth: 'none', marginBottom: 28, display: 'grid', gridTemplateColumns: 'minmax(180px, 1fr) minmax(220px, 2fr) auto', gap: 12, alignItems: 'end' }}>
+      <form className="form-card category-form" onSubmit={create} style={{ maxWidth: 'none', marginBottom: 28 }}>
         <label>
           Name
           <input required maxLength={100} placeholder="e.g. Cosplay Props" value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })} />
