@@ -166,7 +166,9 @@ echo "NEXT_PUBLIC_API_URL=http://localhost:8080/api" > .env.local
 npm run dev                # http://localhost:3000
 ```
 
-Demo data (8 categories, 15 products, 1 admin, 1 customer) is created on first boot against an empty database **only when `SEED_DEMO_DATA=true`** — the `.env.example` you copied sets it for local development. It is off by default; never enable it in a real deployment.
+Demo data (8 categories, 15 products with photos, 1 admin, 1 customer) is created on first boot against an empty database **only when `SEED_DEMO_DATA=true`** — the `.env.example` you copied sets it for local development. It is off by default; never enable it in a real deployment.
+
+The demo product photos live in `backend/src/main/resources/seed/product-images/` (one `<product-name-slug>.jpg` per product) and are copied into `PRODUCT_IMAGE_DIR` when the products are seeded. Two are AI-generated (phone stand, cable management box); the rest are free stock photos from [Pexels](https://www.pexels.com/license/), used as stand-ins for the printed items.
 
 **Run backend tests:** `cd backend && mvn test` — runs against an in-memory H2 database by default (no PostgreSQL needed), using the real `application.yml` plus the test overrides in `application-test.yml`. To run the same suite against PostgreSQL, set `TEST_DATABASE_URL`, `TEST_DATABASE_USERNAME` and `TEST_DATABASE_PASSWORD` to an empty, throwaway database.
 

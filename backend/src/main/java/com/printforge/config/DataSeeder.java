@@ -4,16 +4,21 @@ import com.printforge.entity.*;
 import com.printforge.repository.CategoryRepository;
 import com.printforge.repository.ProductRepository;
 import com.printforge.repository.UserRepository;
+import com.printforge.service.ProductImageService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionTemplate;
+import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -37,6 +42,7 @@ public class DataSeeder implements SmartInitializingSingleton {
   private final ProductRepository products;
   private final PasswordEncoder encoder;
   private final TransactionTemplate transaction;
+  private final ProductImageService productImages;
   @Value("${app.seed.enabled:false}") private boolean enabled;
 
   @Override
@@ -114,7 +120,28 @@ public class DataSeeder implements SmartInitializingSingleton {
       product.setStockQuantity((Integer) def[4]);
       product.setMaterial((String) def[5]);
       product.setColor((String) def[6]);
-      products.save(product);
+      Product saved = products.save(product);
+      seedPhoto(saved);
     }
+  }
+
+  /**
+   * Gives a demo product its bundled photo (resources/seed/product-images/&lt;name-slug&gt;.jpg).
+   * A missing or unreadable photo is not fatal: the product falls back to the generated placeholder.
+   */
+  private void seedPhoto(Product product) {
+    if (product.getId() == null) return;
+    ClassPathResource photo = new ClassPathResource("seed/product-images/" + slug(product.getName()) + ".jpg");
+    if (!photo.exists()) return;
+    try (InputStream content = photo.getInputStream()) {
+      productImages.storeBundled(product.getId(), content, "jpg");
+    } catch (IOException e) {
+      log.warn("Could not copy the demo photo for {}: {}", product.getName(), e.getMessage());
+    }
+  }
+
+  /** "Cable Clip Pack (x6)" becomes "cable-clip-pack-x6". */
+  static String slug(String name) {
+    return name.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "-").replaceAll("(^-|-$)", "");
   }
 }

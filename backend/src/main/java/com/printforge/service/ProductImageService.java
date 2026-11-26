@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -49,6 +50,15 @@ public class ProductImageService {
     } catch (IOException e) {
       throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to store the uploaded image");
     }
+  }
+
+  /**
+   * Stores a photo the application itself ships (demo seed data), replacing any existing one.
+   * Uploads from users go through {@link #store(Long, MultipartFile)}, which validates them.
+   */
+  public void storeBundled(Long productId, InputStream content, String extension) throws IOException {
+    delete(productId);
+    Files.copy(content, root.resolve(productId + "." + extension), StandardCopyOption.REPLACE_EXISTING);
   }
 
   public Optional<Resource> find(Long productId) {
