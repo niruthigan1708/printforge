@@ -6,7 +6,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "next typegen && tsc --noEmit"
+    "typecheck": "next typegen && tsc --noEmit",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "@types/node": "^20.14.10",
@@ -19,6 +20,7 @@
     "typescript": "^5.5.4"
   },
   "devDependencies": {
+    "@playwright/test": "1.65.0",
     "eslint": "9.39.5",
     "eslint-config-next": "16.4.6"
   }
