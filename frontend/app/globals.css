@@ -2019,3 +2019,30 @@ tr:hover td {
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
+
+/* ---------- Theme switch reveal (components/ThemeToggle.tsx) ---------- */
+/* The new theme is revealed by a clip-path circle animated from script; turn off the browser's
+   default cross-fade so only the circle moves. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+/* While switching, colours change at once underneath the reveal instead of fading on their own. */
+.theme-switching *,
+.theme-switching *::before,
+.theme-switching *::after {
+  transition: none !important;
+}
+
+/* The sun/moon spins in each time it changes. */
+.theme-icon { animation: themeIconIn 0.5s cubic-bezier(0.22, 1, 0.36, 1); }
+@keyframes themeIconIn {
+  from { opacity: 0; transform: rotate(-90deg) scale(0.4); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-icon { animation: none; }
+}

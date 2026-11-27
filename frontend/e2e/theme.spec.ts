@@ -14,7 +14,8 @@ test('the site follows the device theme until the visitor picks one', async ({ b
   expect(await canvas(page)).toBe(DARK)
 
   await page.getByRole('button', { name: 'Switch to light mode' }).click()
-  expect(await canvas(page)).toBe(LIGHT)
+  // The switch happens inside an animated view transition, so wait for it rather than read at once.
+  await expect.poll(() => canvas(page)).toBe(LIGHT)
 
   // The choice survives a reload and is applied before the page is painted, so it never flashes.
   await page.reload()
@@ -23,7 +24,7 @@ test('the site follows the device theme until the visitor picks one', async ({ b
   await expect(page.getByRole('button', { name: 'Switch to dark mode' })).toBeVisible()
 
   await page.getByRole('button', { name: 'Switch to dark mode' }).click()
-  expect(await canvas(page)).toBe(DARK)
+  await expect.poll(() => canvas(page)).toBe(DARK)
 
   assertNoErrors()
   await context.close()
