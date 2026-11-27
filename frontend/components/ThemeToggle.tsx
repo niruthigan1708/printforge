@@ -33,25 +33,39 @@ function switchTheme(next: Theme, event: MouseEvent<HTMLButtonElement>) {
   // Far enough to reach the most distant corner of the viewport.
   const radius = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y))
 
+  // Going dark, the dark glow spreads out of the moon. Going light is the reverse: the dark glow
+  // gathers back into the sun, uncovering the light page beneath it.
+  const collapse = next === 'light'
+
   // Colour fades (header, buttons) would play inside the new snapshot and fight the reveal.
+  // theme-collapse puts the old (dark) snapshot on top and masks it instead (see globals.css).
+  // At full size the mask's solid centre (SOLID_SHARE of its radius) reaches past the farthest
+  // corner, so the glow covers the whole screen.
+  const size = (2 * radius) / SOLID_SHARE
+  const small = { maskSize: '0px 0px', maskPosition: `${x}px ${y}px` }
+  const full = { maskSize: `${size}px ${size}px`, maskPosition: `${x - size / 2}px ${y - size / 2}px` }
+  root.style.setProperty('--reveal-full-size', full.maskSize)
+  root.style.setProperty('--reveal-full-position', full.maskPosition)
+
   root.classList.add('theme-switching')
+  if (collapse) root.classList.add('theme-collapse')
   const transition = document.startViewTransition(() => {
     // Update the icon in the same frame, so the new snapshot already shows it.
     flushSync(() => setTheme(next))
   })
   transition.ready.then(() => {
-    // The mask ends large enough that its solid centre (SOLID_SHARE of its radius) reaches past
-    // the farthest corner, so the new theme fully covers the screen when the animation ends.
-    const size = (2 * radius) / SOLID_SHARE
-    root.animate(
-      {
-        maskSize: ['0px 0px', `${size}px ${size}px`],
-        maskPosition: [`${x}px ${y}px`, `${x - size / 2}px ${y - size / 2}px`],
-      },
-      { duration: REVEAL_MS, easing: REVEAL_EASING, pseudoElement: '::view-transition-new(root)', fill: 'both' },
-    )
+    root.animate(collapse ? [full, small] : [small, full], {
+      duration: REVEAL_MS,
+      easing: REVEAL_EASING,
+      pseudoElement: collapse ? '::view-transition-old(root)' : '::view-transition-new(root)',
+      fill: 'both',
+    })
   }).catch(() => { /* skipped (e.g. tab hidden): the theme has still changed */ })
-  transition.finished.finally(() => root.classList.remove('theme-switching'))
+  transition.finished.finally(() => {
+    root.classList.remove('theme-switching', 'theme-collapse')
+    root.style.removeProperty('--reveal-full-size')
+    root.style.removeProperty('--reveal-full-position')
+  })
 }
 
 /**

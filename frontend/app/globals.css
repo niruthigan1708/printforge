@@ -2038,6 +2038,20 @@ tr:hover td {
   mask-size: 0 0;
 }
 
+/* Switching to light runs in reverse: the old (dark) snapshot stays on top and the same glow mask
+   shrinks it back into the sun, uncovering the new light page, which is shown in full. */
+html.theme-collapse::view-transition-old(root) {
+  z-index: 1;
+  mask-image: radial-gradient(closest-side, #000 30%, rgba(0, 0, 0, 0.78) 40%, rgba(0, 0, 0, 0.48) 52%, rgba(0, 0, 0, 0.2) 64%, rgba(0, 0, 0, 0.05) 74%, transparent 82%);
+  mask-repeat: no-repeat;
+  /* Starts at full size (set by ThemeToggle), so the first frame is fully dark. */
+  mask-size: var(--reveal-full-size);
+  mask-position: var(--reveal-full-position);
+}
+html.theme-collapse::view-transition-new(root) {
+  mask-image: none;
+}
+
 /* While switching, colours change at once underneath the reveal instead of fading on their own. */
 .theme-switching *,
 .theme-switching *::before,
