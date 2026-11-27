@@ -5,17 +5,23 @@ import { flushSync } from 'react-dom'
 import { Moon, Sun } from 'lucide-react'
 import { currentTheme, setTheme, subscribeToTheme, type Theme } from '../lib/theme'
 
-const REVEAL_MS = 750
-const REVEAL_EASING = 'cubic-bezier(0.4, 0, 0.2, 1)' // eases in and out, so the blend feels gradual
-/** Share of the reveal mask's radius that is fully the new theme; the rest is the soft fade. */
-const SOLID_SHARE = 0.45
+const REVEAL_MS = 1400
+const REVEAL_EASING = 'cubic-bezier(0.55, 0, 0.45, 1)' // ease in and out, so the rays spread evenly instead of rushing out
+/**
+ * Share of the reveal mask's radius that is fully the new theme (the 30% stop in globals.css);
+ * beyond it the disc fades out and the rays reach further still.
+ */
+const SOLID_SHARE = 0.3
+/** The mask has three layers (disc, rays, ray fade), all grown together from the button. */
+const MASK_LAYERS = 3
 
 /**
- * Switches the theme with a soft-edged circle that grows out of the button until it covers the screen.
+ * Switches the theme with soft rays and a blurred circle that grow out of the button until the new
+ * theme covers the screen, like light (or shade) spreading from the sun or moon.
  *
  * Uses the View Transitions API: the browser snapshots the page, the theme changes underneath,
- * and the new theme fades in through an expanding radial mask. Browsers without the API, and
- * visitors who ask for reduced motion, get an instant switch instead.
+ * and the new theme fades in through an expanding mask (see globals.css). Browsers without the
+ * API, and visitors who ask for reduced motion, get an instant switch instead.
  */
 function switchTheme(next: Theme, event: MouseEvent<HTMLButtonElement>) {
   const root = document.documentElement
@@ -39,15 +45,14 @@ function switchTheme(next: Theme, event: MouseEvent<HTMLButtonElement>) {
     flushSync(() => setTheme(next))
   })
   transition.ready.then(() => {
-    // The new theme shows through a soft-edged circle (a radial-gradient mask, see globals.css):
-    // solid in the middle, fading out over its outer part, so colours blend rather than wipe.
-    // The mask is sized so its solid part (SOLID_SHARE of the mask's radius) ends up past the
-    // farthest corner.
+    // The mask ends large enough that its solid centre (SOLID_SHARE of its radius) reaches past
+    // the farthest corner, so the new theme fully covers the screen when the animation ends.
     const size = (2 * radius) / SOLID_SHARE
+    const layers = (value: string) => Array(MASK_LAYERS).fill(value).join(', ')
     root.animate(
       {
-        maskSize: ['0px 0px', `${size}px ${size}px`],
-        maskPosition: [`${x}px ${y}px`, `${x - size / 2}px ${y - size / 2}px`],
+        maskSize: [layers('0px 0px'), layers(`${size}px ${size}px`)],
+        maskPosition: [layers(`${x}px ${y}px`), layers(`${x - size / 2}px ${y - size / 2}px`)],
       },
       { duration: REVEAL_MS, easing: REVEAL_EASING, pseudoElement: '::view-transition-new(root)', fill: 'both' },
     )
