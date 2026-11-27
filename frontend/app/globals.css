@@ -2032,16 +2032,16 @@ tr:hover td {
 /* Ray reveal. Three mask layers grow together from the toggle (ThemeToggle animates their size
    and position):
      1. a soft disc: solid to 30% (SOLID_SHARE there), then a long fade;
-     2. 90 thin, soft-edged rays fanning out from the centre (many and narrow, so they stay fine
-        as the mask grows instead of widening into a few big wedges) ...
-     3. ... kept only a little past the disc and dimming to their tips, so they form a soft
-        fringe around the spreading circle rather than long spikes.
+     2. a gentle shimmer: 120 fine angular ripples that only vary the strength between 100% and
+        80%, so the spreading edge glimmers without showing distinct rays ...
+     3. ... kept only a little past the disc and fading out, so the shimmer stays a soft fringe
+        around the spreading circle.
    Compositing runs bottom-up: rays intersect the fade, then the disc is added on top. */
 ::view-transition-new(root) {
   mask-image:
     radial-gradient(closest-side, #000 30%, rgba(0, 0, 0, 0.55) 48%, transparent 66%),
-    repeating-conic-gradient(#000 0deg, rgba(0, 0, 0, 0.4) 1deg, transparent 2deg, rgba(0, 0, 0, 0.4) 3deg, #000 4deg),
-    radial-gradient(closest-side, #000 30%, rgba(0, 0, 0, 0.5) 56%, transparent 76%);
+    repeating-conic-gradient(#000 0deg, rgba(0, 0, 0, 0.8) 1.5deg, #000 3deg),
+    radial-gradient(closest-side, #000 30%, rgba(0, 0, 0, 0.45) 54%, transparent 74%);
   mask-composite: add, intersect, add;
   mask-repeat: no-repeat;
   mask-size: 0 0;
