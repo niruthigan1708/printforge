@@ -5,14 +5,16 @@ import { flushSync } from 'react-dom'
 import { Moon, Sun } from 'lucide-react'
 import { currentTheme, setTheme, subscribeToTheme, type Theme } from '../lib/theme'
 
-const REVEAL_MS = 550
-const REVEAL_EASING = 'cubic-bezier(0.22, 1, 0.36, 1)' // fast start, gentle finish
+const REVEAL_MS = 750
+const REVEAL_EASING = 'cubic-bezier(0.4, 0, 0.2, 1)' // eases in and out, so the blend feels gradual
+/** Share of the reveal mask's radius that is fully the new theme; the rest is the soft fade. */
+const SOLID_SHARE = 0.45
 
 /**
- * Switches the theme with a circle that grows out of the button until it covers the screen.
+ * Switches the theme with a soft-edged circle that grows out of the button until it covers the screen.
  *
  * Uses the View Transitions API: the browser snapshots the page, the theme changes underneath,
- * and the new theme is revealed through an expanding clip-path. Browsers without the API, and
+ * and the new theme fades in through an expanding radial mask. Browsers without the API, and
  * visitors who ask for reduced motion, get an instant switch instead.
  */
 function switchTheme(next: Theme, event: MouseEvent<HTMLButtonElement>) {
@@ -37,9 +39,17 @@ function switchTheme(next: Theme, event: MouseEvent<HTMLButtonElement>) {
     flushSync(() => setTheme(next))
   })
   transition.ready.then(() => {
+    // The new theme shows through a soft-edged circle (a radial-gradient mask, see globals.css):
+    // solid in the middle, fading out over its outer part, so colours blend rather than wipe.
+    // The mask is sized so its solid part (SOLID_SHARE of the mask's radius) ends up past the
+    // farthest corner.
+    const size = (2 * radius) / SOLID_SHARE
     root.animate(
-      { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`] },
-      { duration: REVEAL_MS, easing: REVEAL_EASING, pseudoElement: '::view-transition-new(root)' },
+      {
+        maskSize: ['0px 0px', `${size}px ${size}px`],
+        maskPosition: [`${x}px ${y}px`, `${x - size / 2}px ${y - size / 2}px`],
+      },
+      { duration: REVEAL_MS, easing: REVEAL_EASING, pseudoElement: '::view-transition-new(root)', fill: 'both' },
     )
   }).catch(() => { /* skipped (e.g. tab hidden): the theme has still changed */ })
   transition.finished.finally(() => root.classList.remove('theme-switching'))

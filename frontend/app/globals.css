@@ -2021,12 +2021,20 @@ tr:hover td {
 }
 
 /* ---------- Theme switch reveal (components/ThemeToggle.tsx) ---------- */
-/* The new theme is revealed by a clip-path circle animated from script; turn off the browser's
+/* The new theme is revealed by a mask animated from script; turn off the browser's
    default cross-fade so only the circle moves. */
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation: none;
   mix-blend-mode: normal;
+}
+
+/* Soft-edged reveal: solid at the centre, fading to transparent at the rim. ThemeToggle animates
+   its size and position outward from the button. The 45% stop matches SOLID_SHARE there. */
+::view-transition-new(root) {
+  mask-image: radial-gradient(closest-side, #000 45%, transparent 100%);
+  mask-repeat: no-repeat;
+  mask-size: 0 0;
 }
 
 /* While switching, colours change at once underneath the reveal instead of fading on their own. */
