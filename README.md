@@ -14,7 +14,7 @@ Built as a realistic, portfolio-quality MVP — clean layered architecture, real
 - Browse, search, filter, and sort the product catalogue
 - Product detail pages with related products
 - Cart with quantity controls, persisted locally
-- Light and dark themes: follows the device setting, with a header toggle that is remembered (applied before the first paint, so pages never flash the wrong theme); switching spreads the new theme out of the sun/moon button as a soft, gently shimmering glow
+- Light and dark themes: follows the device setting, with a header toggle that is remembered (applied before the first paint, so pages never flash the wrong theme); switching spreads the new theme out of the sun/moon button as a soft glow
 - Checkout with cash-on-delivery / demo payment, server-side stock validation
 - Order history with a visual status tracker (Placed → Confirmed → Printing → Ready → Shipped → Delivered), the tracking number, and a timeline of every change
 - Confirm a delivered order arrived, or report within 14 days that it did not

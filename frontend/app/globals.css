@@ -2029,20 +2029,11 @@ tr:hover td {
   mix-blend-mode: normal;
 }
 
-/* Ray reveal. Three mask layers grow together from the toggle (ThemeToggle animates their size
-   and position):
-     1. a soft disc: solid to 30% (SOLID_SHARE there), then a long fade;
-     2. a gentle shimmer: 120 fine angular ripples that only vary the strength between 100% and
-        80%, so the spreading edge glimmers without showing distinct rays ...
-     3. ... kept only a little past the disc and fading out, so the shimmer stays a soft fringe
-        around the spreading circle.
-   Compositing runs bottom-up: rays intersect the fade, then the disc is added on top. */
+/* Glow reveal. ThemeToggle grows this mask from the toggle by animating its size and position.
+   It is solid to 30% (SOLID_SHARE there), then fades over several gentle steps, so the new theme
+   arrives as a soft glow with no visible edge, lines or rings. */
 ::view-transition-new(root) {
-  mask-image:
-    radial-gradient(closest-side, #000 30%, rgba(0, 0, 0, 0.55) 48%, transparent 66%),
-    repeating-conic-gradient(#000 0deg, rgba(0, 0, 0, 0.8) 1.5deg, #000 3deg),
-    radial-gradient(closest-side, #000 30%, rgba(0, 0, 0, 0.45) 54%, transparent 74%);
-  mask-composite: add, intersect, add;
+  mask-image: radial-gradient(closest-side, #000 30%, rgba(0, 0, 0, 0.78) 40%, rgba(0, 0, 0, 0.48) 52%, rgba(0, 0, 0, 0.2) 64%, rgba(0, 0, 0, 0.05) 74%, transparent 82%);
   mask-repeat: no-repeat;
   mask-size: 0 0;
 }
