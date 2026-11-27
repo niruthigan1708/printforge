@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { connection } from 'next/server'
+import { headers } from 'next/headers'
+import { THEME_STORAGE_KEY } from '../lib/theme'
 import { Providers } from '../lib/providers'
 
 export const metadata: Metadata = {
@@ -10,7 +12,10 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: '#0F1115',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#F8F9FA' },
+    { media: '(prefers-color-scheme: dark)', color: '#0E1016' },
+  ],
   width: 'device-width',
   initialScale: 1,
 }
@@ -19,9 +24,19 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   // Render every page per request: the CSP nonce set in proxy.ts is new for each request, and a
   // statically prerendered page would carry no nonce, so its scripts would be blocked.
   await connection()
+  const nonce = (await headers()).get('x-nonce') ?? undefined
   return (
-    <html lang="en">
+    // The theme script below may set data-theme before React hydrates; the DOM keeps it.
+    <html lang="en" suppressHydrationWarning>
       <head>
+        {/* Applies a saved light/dark choice before the first paint, so the page never flashes
+            the wrong theme. Without a saved choice the CSS follows the device setting. */}
+        <script
+          nonce={nonce}
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)});if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}})()`,
+          }}
+        />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link

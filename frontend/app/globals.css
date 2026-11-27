@@ -63,6 +63,99 @@
   --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-spring: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+  /* Theme-dependent details (redefined for dark mode below) */
+  --header-bg: rgba(248, 249, 250, 0.82);
+  --hover-tint: rgba(0, 0, 0, 0.04);
+  --hover-tint-faint: rgba(0, 0, 0, 0.015);
+  --btn-hover: #252A34;
+  --bg-image: #F3F4F6;
+  --swatch-border: rgba(0, 0, 0, 0.15);
+
+  color-scheme: light;
+}
+
+/*
+ * Dark theme. It follows the device setting unless the visitor picked a theme with the header
+ * toggle, which sets data-theme on <html> (see components/ThemeToggle.tsx and app/layout.tsx).
+ * The palette is written out twice because a media query cannot share a block with a selector.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg-canvas: #0E1016;
+    --bg-surface: #161A23;
+    --bg-surface-elevated: #1C212C;
+    --bg-subtle: #212734;
+    --bg-dark: #08090D;
+    --bg-dark-card: #12151D;
+    --bg-dark-subtle: #1A1F2A;
+    --border-subtle: #262C39;
+    --border-medium: #343C4C;
+    --border-dark: #262C39;
+    --text-primary: #ECEFF4;
+    --text-secondary: #B7BFCB;
+    --text-muted: #8B95A5;
+    --text-inverse: #11141A;
+    --accent-primary-hover: #FF7A2E;
+    --accent-primary-subtle: rgba(255, 92, 0, 0.14);
+    --accent-emerald-subtle: rgba(16, 185, 129, 0.14);
+    --accent-emerald-text: #6EE7B7;
+    --accent-blue-subtle: rgba(59, 130, 246, 0.16);
+    --accent-blue-text: #93C5FD;
+    --accent-amber-subtle: rgba(245, 158, 11, 0.14);
+    --accent-amber-text: #FCD34D;
+    --accent-red-subtle: rgba(239, 68, 68, 0.14);
+    --accent-red-text: #FCA5A5;
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-sm: 0 2px 8px -2px rgba(0, 0, 0, 0.4), 0 1px 4px -1px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 12px 24px -6px rgba(0, 0, 0, 0.5), 0 4px 12px -2px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 20px 35px -8px rgba(0, 0, 0, 0.6), 0 8px 16px -4px rgba(0, 0, 0, 0.35);
+    --header-bg: rgba(14, 16, 22, 0.82);
+    --hover-tint: rgba(255, 255, 255, 0.06);
+    --hover-tint-faint: rgba(255, 255, 255, 0.025);
+    --btn-hover: #FFFFFF;
+    --bg-image: #1C212C;
+    --swatch-border: rgba(255, 255, 255, 0.25);
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg-canvas: #0E1016;
+  --bg-surface: #161A23;
+  --bg-surface-elevated: #1C212C;
+  --bg-subtle: #212734;
+  --bg-dark: #08090D;
+  --bg-dark-card: #12151D;
+  --bg-dark-subtle: #1A1F2A;
+  --border-subtle: #262C39;
+  --border-medium: #343C4C;
+  --border-dark: #262C39;
+  --text-primary: #ECEFF4;
+  --text-secondary: #B7BFCB;
+  --text-muted: #8B95A5;
+  --text-inverse: #11141A;
+  --accent-primary-hover: #FF7A2E;
+  --accent-primary-subtle: rgba(255, 92, 0, 0.14);
+  --accent-emerald-subtle: rgba(16, 185, 129, 0.14);
+  --accent-emerald-text: #6EE7B7;
+  --accent-blue-subtle: rgba(59, 130, 246, 0.16);
+  --accent-blue-text: #93C5FD;
+  --accent-amber-subtle: rgba(245, 158, 11, 0.14);
+  --accent-amber-text: #FCD34D;
+  --accent-red-subtle: rgba(239, 68, 68, 0.14);
+  --accent-red-text: #FCA5A5;
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 2px 8px -2px rgba(0, 0, 0, 0.4), 0 1px 4px -1px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 12px 24px -6px rgba(0, 0, 0, 0.5), 0 4px 12px -2px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 20px 35px -8px rgba(0, 0, 0, 0.6), 0 8px 16px -4px rgba(0, 0, 0, 0.35);
+  --header-bg: rgba(14, 16, 22, 0.82);
+  --hover-tint: rgba(255, 255, 255, 0.06);
+  --hover-tint-faint: rgba(255, 255, 255, 0.025);
+  --btn-hover: #FFFFFF;
+  --bg-image: #1C212C;
+  --swatch-border: rgba(255, 255, 255, 0.25);
 }
 
 /* Base resets & typography */
@@ -151,7 +244,7 @@ button {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(248, 249, 250, 0.82);
+  background: var(--header-bg);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border-subtle);
@@ -214,7 +307,7 @@ button {
 
 .nav-link:hover {
   color: var(--text-primary);
-  background: rgba(0, 0, 0, 0.04);
+  background: var(--hover-tint);
 }
 
 .nav-link.active {
@@ -360,8 +453,8 @@ button {
 }
 
 .btn:hover {
-  background: #252A34;
-  border-color: #252A34;
+  background: var(--btn-hover);
+  border-color: var(--btn-hover);
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
@@ -729,7 +822,7 @@ button {
 
 .product-image {
   height: 230px;
-  background: #F3F4F6;
+  background: var(--bg-image);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -805,7 +898,7 @@ button {
   height: 38px;
   border-radius: var(--radius-full);
   background: var(--text-primary);
-  color: #FFFFFF;
+  color: var(--text-inverse);
   display: grid;
   place-items: center;
   transition: all var(--transition-fast);
@@ -1148,7 +1241,7 @@ label {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  border: 1px solid rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--swatch-border);
 }
 
 /* Live Quote Estimator Widget */
@@ -1319,7 +1412,7 @@ tr:last-child td {
 }
 
 tr:hover td {
-  background: rgba(0, 0, 0, 0.015);
+  background: var(--hover-tint-faint);
 }
 
 /* Alerts & Toasts */
@@ -1549,7 +1642,7 @@ tr:hover td {
   width: 90px;
   height: 90px;
   border-radius: var(--radius-md);
-  background: #F3F4F6;
+  background: var(--bg-image);
   overflow: hidden;
   flex: none;
 }

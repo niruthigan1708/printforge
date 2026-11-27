@@ -14,6 +14,7 @@ Built as a realistic, portfolio-quality MVP — clean layered architecture, real
 - Browse, search, filter, and sort the product catalogue
 - Product detail pages with related products
 - Cart with quantity controls, persisted locally
+- Light and dark themes: follows the device setting, with a header toggle that is remembered (applied before the first paint, so pages never flash the wrong theme)
 - Checkout with cash-on-delivery / demo payment, server-side stock validation
 - Order history with a visual status tracker (Placed → Confirmed → Printing → Ready → Shipped → Delivered), the tracking number, and a timeline of every change
 - Confirm a delivered order arrived, or report within 14 days that it did not
@@ -181,7 +182,7 @@ The demo product photos live in `backend/src/main/resources/seed/product-images/
 
 **Lint and type-check the frontend:** `cd frontend && npm run lint && npm run typecheck`.
 
-**End-to-end tests:** `frontend/e2e` holds Playwright tests that drive real user journeys in Google Chrome (buying and cancelling an order, shipping and delivering one with a "not received" report and confirmation, custom print upload → quote → acceptance, category management, registration, account settings, password reset, the cookie/CSP security guarantees, and that every page fits a 360px phone screen). They **create accounts and orders and change passwords**, so run them only against a disposable stack: an empty database, the API started with `SEED_DEMO_DATA=true` and the frontend built and started. Then `cd frontend && E2E_DISPOSABLE=1 npm run e2e` (the suite refuses to run without that flag). Password reset links are read from Mailpit when `MAILPIT_URL` is set (as in CI), or from the API's log via `BACKEND_LOG=<path to the log>` when SMTP is not configured. `E2E_BASE_URL` / `E2E_API_URL` override the default `localhost:3000` / `localhost:8080/api`.
+**End-to-end tests:** `frontend/e2e` holds Playwright tests that drive real user journeys in Google Chrome (buying and cancelling an order, shipping and delivering one with a "not received" report and confirmation, custom print upload → quote → acceptance, category management, registration, account settings, password reset, the cookie/CSP security guarantees, that every page fits a 360px phone screen, and the light/dark theme toggle). They **create accounts and orders and change passwords**, so run them only against a disposable stack: an empty database, the API started with `SEED_DEMO_DATA=true` and the frontend built and started. Then `cd frontend && E2E_DISPOSABLE=1 npm run e2e` (the suite refuses to run without that flag). Password reset links are read from Mailpit when `MAILPIT_URL` is set (as in CI), or from the API's log via `BACKEND_LOG=<path to the log>` when SMTP is not configured. `E2E_BASE_URL` / `E2E_API_URL` override the default `localhost:3000` / `localhost:8080/api`.
 
 **Continuous integration:** `.github/workflows/ci.yml` runs on every push to `main` and every pull request: the backend suite on H2 and again on PostgreSQL 18; frontend lint, type-check and production build; and the end-to-end suite against a full stack (PostgreSQL, the API, the frontend and a Mailpit SMTP server), uploading the Playwright report and logs if it fails.
 

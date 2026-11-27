@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 import { ShoppingBag, Menu, X, Box, User as UserIcon, LogOut, ShieldAlert } from 'lucide-react'
 import { useCart } from '../lib/cart-context'
 import { useAuth } from '../lib/auth-context'
+import { ThemeToggle } from './ThemeToggle'
 
 export function Header() {
   const pathname = usePathname()
@@ -47,6 +48,7 @@ export function Header() {
           </nav>
 
           <div className="nav-actions">
+            <ThemeToggle />
             <Link className="icon-btn" href="/cart" aria-label="Open Cart">
               <ShoppingBag size={18} />
               {/* Keyed on the count so the pop animation replays whenever it changes. */}
